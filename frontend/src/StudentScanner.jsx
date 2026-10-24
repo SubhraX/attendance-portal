@@ -12,29 +12,29 @@ export default function StudentScanner() {
     if (isMarked) return; // Prevent scanner from mounting if already marked
 
     const scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-    
+
     scanner.render(async (decodedText) => {
-      scanner.pause(true); 
+      scanner.pause(true);
       try {
         const qrData = JSON.parse(decodedText);
         const authToken = localStorage.getItem('token');
-        
-        const res = await fetch('/api/attendance/mark', {
+
+        const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/mark', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
           body: JSON.stringify({ classId: qrData.classId, scannedToken: qrData.token })
         });
-        
+
         const data = await res.json();
-        if(res.ok) {
-           setMessage('✅ Your attendance is marked!');
-           setStatusColor('text-emerald-400');
-           setIsMarked(true); // Triggers the UI change
-           scanner.clear(); // Stops and removes the camera
+        if (res.ok) {
+          setMessage('✅ Your attendance is marked!');
+          setStatusColor('text-emerald-400');
+          setIsMarked(true); // Triggers the UI change
+          scanner.clear(); // Stops and removes the camera
         } else {
-           setMessage(`❌ ${data.message}`);
-           setStatusColor('text-red-400');
-           setTimeout(() => scanner.resume(), 3000); 
+          setMessage(`❌ ${data.message}`);
+          setStatusColor('text-red-400');
+          setTimeout(() => scanner.resume(), 3000);
         }
       } catch (err) {
         setMessage('❌ Invalid QR Format');
@@ -63,7 +63,7 @@ export default function StudentScanner() {
 
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl animate-fade-in-up">
         <h2 className="text-2xl font-bold mb-6 text-center text-emerald-400">Scanner Portal</h2>
-        
+
         {!isMarked ? (
           <div id="reader" className="w-full mb-6 rounded-xl bg-slate-950 p-2 flex flex-col items-center"></div>
         ) : (
@@ -74,7 +74,7 @@ export default function StudentScanner() {
             <h3 className="text-xl font-bold text-white mb-2">Success</h3>
           </div>
         )}
-        
+
         {message && (
           <div className={`p-4 text-center text-lg font-bold bg-slate-950 border border-slate-800 rounded-lg ${statusColor} animate-fade-in-up`}>
             {message}
@@ -82,9 +82,9 @@ export default function StudentScanner() {
         )}
 
         {isMarked && (
-           <button onClick={() => navigate('/')} className="w-full mt-6 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-all">
-             Logout / Return Home
-           </button>
+          <button onClick={() => navigate('/')} className="w-full mt-6 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-all">
+            Logout / Return Home
+          </button>
         )}
       </div>
     </div>

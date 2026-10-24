@@ -8,14 +8,16 @@ export default function InstructorDashboard() {
 
   const startSession = async () => {
     const authToken = localStorage.getItem('token');
-    const res = await fetch('/api/attendance/start', {
+    // 1. UPDATE THIS FETCH URL
+    const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
       body: JSON.stringify({ classId })
     });
     
     if(res.ok) {
-      const socket = new WebSocket('ws://localhost:5000');
+      // 2. UPDATE THIS WEBSOCKET URL
+      const socket = new WebSocket('wss://attendance-portal-p2lp.onrender.com');
       socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId }));
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);

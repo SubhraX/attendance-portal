@@ -11,14 +11,14 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setStatus('Authenticating...');
-    
-    const res = await fetch('/api/auth/login', {
+
+    const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ username, password }) // Keep your existing body variables
     });
     const data = await res.json();
-    
+
     if (res.ok) {
       if (data.user.role !== role) {
         setStatus(`Error: This account belongs to a ${data.user.role}.`);
@@ -26,7 +26,7 @@ export default function Login() {
       }
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.user.role);
-      
+
       if (data.user.role === 'instructor') navigate('/instructor');
       else navigate('/student');
     } else {
