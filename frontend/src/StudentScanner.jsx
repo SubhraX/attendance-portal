@@ -1,14 +1,19 @@
-import { useEffect, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 
 export default function StudentScanner() {
   const [message, setMessage] = useState('');
-  const [statusColor, setStatusColor] = useState('text-gray-400');
   const [isMarked, setIsMarked] = useState(false);
+  const [isFlashOn, setIsFlashOn] = useState(false);
+  const [facingMode, setFacingMode] = useState('environment'); // 'environment' (back) or 'user' (front)
+  
+  const scannerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const isProcessingRef = useRef(false); // Prevents duplicate scans while fetching
   const navigate = useNavigate();
 
-  // Auto-redirect effect
+  // Auto-redirect upon success
   useEffect(() => {
     if (isMarked) {
       const timer = setTimeout(() => navigate('/'), 3000);
@@ -16,51 +21,128 @@ export default function StudentScanner() {
     }
   }, [isMarked, navigate]);
 
-  // Scanner effect
-  useEffect(() => {
-    if (isMarked) return; 
+  // Handle successful QR read (from live camera or gallery file)
+  const onScanSuccess = useCallback(async (decodedText) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
 
-    const scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+    try {
+      const qrData = JSON.parse(decodedText);
+      const authToken = localStorage.getItem('token');
 
-    scanner.render(async (decodedText) => {
-      scanner.pause(true);
-      try {
-        const qrData = JSON.parse(decodedText);
-        const authToken = localStorage.getItem('token');
+      const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/mark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ classId: qrData.classId, scannedToken: qrData.token })
+      });
 
-        const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/mark', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ classId: qrData.classId, scannedToken: qrData.token })
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          setIsMarked(true); 
-          scanner.clear(); 
-        } else {
-          setMessage(`❌ ${data.message}`);
-          setStatusColor('text-red-400 bg-red-900/20 border-red-900/50');
-          setTimeout(() => scanner.resume(), 3000);
+      const data = await res.json();
+      if (res.ok) {
+        setIsMarked(true);
+        if (scannerRef.current?.isScanning) {
+          await scannerRef.current.stop();
+          scannerRef.current.clear();
         }
-      } catch (err) {
-        setMessage('❌ Invalid QR Format');
-        setStatusColor('text-red-400 bg-red-900/20 border-red-900/50');
-        setTimeout(() => scanner.resume(), 2000);
+      } else {
+        setMessage(`❌ ${data.message}`);
+        setTimeout(() => {
+          setMessage('');
+          isProcessingRef.current = false;
+        }, 3000);
       }
-    }, undefined);
+    } catch (err) {
+      setMessage('❌ Invalid QR Format');
+      setTimeout(() => {
+        setMessage('');
+        isProcessingRef.current = false;
+      }, 2000);
+    }
+  }, []);
 
-    return () => {
-      if (!isMarked) scanner.clear().catch(console.error);
+  // Initialize and manage the live camera stream
+  useEffect(() => {
+    if (isMarked) return;
+
+    const initializeCamera = async () => {
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode("reader");
+      }
+
+      // If already scanning, stop it before switching cameras (e.g. flipping)
+      if (scannerRef.current.isScanning) {
+        await scannerRef.current.stop();
+      }
+
+      try {
+        await scannerRef.current.start(
+          { facingMode: facingMode },
+          { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+          onScanSuccess,
+          () => {} // Ignore scan failure frames
+        );
+        setIsFlashOn(false); // Hardware flash resets on camera start
+      } catch (err) {
+        console.error("Camera error:", err);
+        setMessage("Camera access denied or unavailable.");
+      }
     };
-  }, [isMarked]);
 
-  // Minimal Glowing Success Screen
+    initializeCamera();
+
+    // Cleanup on unmount
+    return () => {
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().then(() => scannerRef.current.clear()).catch(console.error);
+      }
+    };
+  }, [facingMode, isMarked, onScanSuccess]);
+
+  // --- Hardware Control Methods ---
+
+  const handleGalleryUpload = async (e) => {
+    if (e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setMessage('Scanning image...');
+
+    try {
+      const decodedText = await scannerRef.current?.scanFile(file, true);
+      if (decodedText) {
+         onScanSuccess(decodedText);
+      }
+    } catch (err) {
+      setMessage('❌ No valid QR code found in image');
+      setTimeout(() => setMessage(''), 2000);
+    }
+    e.target.value = ''; // Reset input
+  };
+
+  const toggleFlash = async () => {
+    if (!scannerRef.current || !scannerRef.current.isScanning) return;
+    try {
+      const newFlashState = !isFlashOn;
+      await scannerRef.current.applyVideoConstraints({
+        advanced: [{ torch: newFlashState }]
+      });
+      setIsFlashOn(newFlashState);
+    } catch (error) {
+      setMessage('Flash not supported on this device/browser');
+      setTimeout(() => setMessage(''), 2000);
+    }
+  };
+
+  const flipCamera = () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    setMessage('Switching camera...');
+    setTimeout(() => setMessage(''), 1000);
+  };
+
+  // --- Render UI ---
+
   if (isMarked) {
     return (
-      <div className="fixed inset-0 bg-[#0b0f19]/90 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-all duration-500 font-sans">
+      <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50">
         <div className="flex flex-col items-center animate-fade-in-up">
-          <div className="w-28 h-28 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+          <div className="w-28 h-28 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(16,185,129,0.3)]">
             <svg className="w-16 h-16 text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,1)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
@@ -72,49 +154,72 @@ export default function StudentScanner() {
     );
   }
 
-  // High-Tech Scanner UI
   return (
-    <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center p-6 font-sans selection:bg-[#2563eb] selection:text-white">
+    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans selection:bg-[#2563eb] selection:text-white">
       
-      {/* Overriding the default Html5QrcodeScanner styles to match the dark theme */}
+      {/* Top Navigation */}
+      <div className="absolute top-0 left-0 w-full p-5 flex items-center justify-between z-50 bg-gradient-to-b from-black/90 to-transparent">
+        <button onClick={() => navigate('/')} className="text-white p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
+        <h1 className="text-white font-semibold text-lg tracking-wider drop-shadow-md">Scan QR</h1>
+        <div className="w-11"></div> 
+      </div>
+
       <style>{`
-        #reader { border: none !important; width: 100% !important; }
-        #reader button { background-color: #2563eb !important; color: white !important; padding: 10px 20px !important; border-radius: 12px !important; border: none !important; margin: 8px 4px !important; font-weight: 600 !important; cursor: pointer !important; transition: all 0.2s !important; box-shadow: 0 4px 15px rgba(37,99,235,0.2) !important; font-family: inherit !important; }
-        #reader button:hover { background-color: #1d4ed8 !important; transform: translateY(-1px) !important; }
-        #reader select { background-color: #0b0f19 !important; color: #e2e8f0 !important; border: 1px solid #1e293b !important; padding: 12px !important; border-radius: 12px !important; margin-bottom: 16px !important; width: 100% !important; max-width: 100% !important; outline: none !important; font-family: inherit !important; font-size: 14px !important; transition: border-color 0.2s !important; }
-        #reader select:focus { border-color: #5c98ff !important; }
-        #reader a { color: #5c98ff !important; text-decoration: none !important; font-weight: 500 !important; }
-        #reader a:hover { text-decoration: underline !important; }
-        #reader span, #reader div { color: #94a3b8 !important; font-family: inherit !important; }
-        #reader video { border-radius: 16px !important; margin-top: 16px !important; border: 1px solid #1e293b !important; width: 100% !important; object-fit: cover !important; }
-        #qr-shaded-region { border-color: rgba(11, 15, 25, 0.8) !important; }
+        /* Because we switched to the core Html5Qrcode API, we don't have to hide buttons anymore, just style the raw video feed */
+        #reader { width: 100% !important; height: 100vh !important; background: black; position: relative; overflow: hidden; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; }
+        #qr-shaded-region { border-color: rgba(0, 0, 0, 0.6) !important; z-index: 10 !important; }
       `}</style>
 
-      <div className="w-full max-w-md bg-[#151b2b] border border-[#1e293b] rounded-3xl p-8 shadow-2xl animate-fade-in-up">
+      {/* Raw Video Container */}
+      <div id="reader" className="w-full h-full"></div>
+
+      {/* UPI-Style Bottom Hardware Dock */}
+      <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
         
-        {/* Sleek Verification Header */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-[#2563eb]/10 rounded-2xl flex items-center justify-center mb-5 border border-[#2563eb]/20 shadow-[0_0_15px_rgba(37,99,235,0.15)]">
-            <svg className="w-7 h-7 text-[#5c98ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+        {/* Gallery */}
+        <div className="flex flex-col items-center gap-2">
+          <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-          </div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">Identity<span className="text-[#5c98ff]">Scanner</span></h2>
-          <p className="text-gray-400 text-sm mt-2 text-center max-w-[250px]">Point your camera at the live session QR code to record attendance.</p>
+          </button>
+          <span className="text-white text-xs font-medium drop-shadow-md">Gallery</span>
+          <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleGalleryUpload} />
         </div>
 
-        {/* Camera Container */}
-        <div className="w-full mb-6 bg-[#0b0f19] border border-[#1e293b] rounded-2xl p-4 shadow-inner flex flex-col items-center">
-          <div id="reader"></div>
+        {/* Flash */}
+        <div className="flex flex-col items-center gap-2">
+          <button onClick={toggleFlash} className={`w-14 h-14 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg ${isFlashOn ? 'bg-white text-black' : 'bg-black/40 text-white hover:bg-white/10'}`}>
+            <svg className="w-6 h-6" fill={isFlashOn ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </button>
+          <span className="text-white text-xs font-medium drop-shadow-md">Flash</span>
         </div>
 
-        {/* Status Message */}
-        {message && (
-          <div className={`p-4 text-center text-sm font-semibold rounded-xl border transition-all animate-fade-in-up ${statusColor}`}>
-            {message}
-          </div>
-        )}
+        {/* Flip */}
+        <div className="flex flex-col items-center gap-2">
+          <button onClick={flipCamera} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <span className="text-white text-xs font-medium drop-shadow-md">Flip</span>
+        </div>
+
       </div>
+
+      {/* Toast Notification */}
+      {message && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-black/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 shadow-2xl animate-fade-in-up whitespace-nowrap">
+          <p className="text-white font-medium text-sm tracking-wide">{message}</p>
+        </div>
+      )}
     </div>
   );
 }
