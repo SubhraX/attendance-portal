@@ -1,4 +1,3 @@
-// backend/routes/auth.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -24,7 +23,7 @@ router.post('/register', async (req, res) => {
 // Login user and issue JWT
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceId } = req.body;
     
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
@@ -32,11 +31,23 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    // Generate JWT token valid for 8 hours
+    // DEVICE LOCK LOGIC (Only enforced on students)
+    if (user.role === 'student') {
+      if (user.deviceId && user.deviceId !== deviceId) {
+        return res.status(403).json({ message: 'Account is securely locked to another device.' });
+      }
+      // Lock the account to this device on their very first successful login
+      if (!user.deviceId && deviceId) {
+        user.deviceId = deviceId;
+        await user.save();
+      }
+    }
+
+    // Generate JWT token valid for 1 year (365 days)
     const token = jwt.sign(
       { id: user._id, role: user.role }, 
       process.env.JWT_SECRET, 
-      { expiresIn: '8h' }
+      { expiresIn: '365d' }
     );
 
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });

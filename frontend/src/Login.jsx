@@ -14,11 +14,21 @@ export default function Login() {
     setIsLoading(true);
     setStatus('');
 
+    // DEVICE LOCK LOGIC: Generate or retrieve permanent device ID
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+      // Fallback for older browsers if crypto.randomUUID is not available
+      deviceId = window.crypto?.randomUUID 
+        ? window.crypto.randomUUID() 
+        : `device-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+      localStorage.setItem('deviceId', deviceId);
+    }
+
     try {
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, deviceId }) // Included deviceId
       });
       const data = await res.json();
 

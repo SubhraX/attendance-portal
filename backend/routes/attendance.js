@@ -33,7 +33,8 @@ router.post('/start', protect, instructorOnly, (req, res) => {
   global.activeSessions[classId] = { 
     currentToken: token, 
     expiresAt,
-    instructorIP: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress 
+    instructorIP: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress,
+    markedStudents: new Set() // <-- NEW: Memory tracker for the live session
   };
 
   res.status(200).json({ message: 'Session started', token, expiresAt });
@@ -51,6 +52,12 @@ router.post('/mark', protect, async (req, res) => {
 
   if (!session) {
     return res.status(400).json({ message: 'No active attendance session for this class' });
+  }
+
+  // NEW: Instantly block if they already scanned during this live session
+  const studentIdStr = req.user._id.toString();
+  if (session.markedStudents.has(studentIdStr)) {
+    return res.status(400).json({ message: 'Attendance already marked for this session' });
   }
 
   if (scannedToken !== session.currentToken || Date.now() > session.expiresAt) {
@@ -76,6 +83,9 @@ router.post('/mark', protect, async (req, res) => {
       sessionToken: scannedToken,
       ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress
     });
+
+    // NEW: Add student to memory lock to instantly block subsequent scans
+    session.markedStudents.add(studentIdStr);
 
     // Broadcast to the faculty panel in real-time
     if (global.facultySockets && global.facultySockets[classId]) {
