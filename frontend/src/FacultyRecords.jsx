@@ -11,16 +11,18 @@ export default function FacultyRecords() {
 
   // Student Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [attendanceDates, setAttendanceDates] = useState([]);
   const [isModalLoading, setIsModalLoading] = useState(false);
+  
+  // NEW: Advanced Calendar State
+  const [availableMonths, setAvailableMonths] = useState([]);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+  const [attendanceData, setAttendanceData] = useState({}); // Stores { "YYYY-MM-DD": "present" or "absent" }
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
   
   // Edit Student State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '' });
-
-  // Calendar State
-  const [calYear, setCalYear] = useState(new Date().getFullYear());
-  const [calMonth, setCalMonth] = useState(new Date().getMonth());
 
   useEffect(() => {
     fetchStudents();
@@ -67,35 +69,46 @@ export default function FacultyRecords() {
     setSelectedStudent(student);
     setIsEditing(false);
     setEditForm({ name: student.name, email: student.email, password: '' });
-    setCalYear(new Date().getFullYear());
-    setCalMonth(new Date().getMonth());
     setIsModalLoading(true);
 
     try {
       const token = localStorage.getItem('token');
-      // Fetch attendance history for this specific student
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${student._id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const records = await res.json();
       
       if (res.ok && Array.isArray(records)) {
-        // Convert to an array of strictly formatted YYYY-MM-DD strings
-        const datesArray = records.map(r => {
+        const dataMap = {};
+        const monthsSet = new Set();
+
+        records.forEach(r => {
           const d = new Date(r.createdAt || r.date);
-          if (isNaN(d)) return null;
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }).filter(Boolean); // Removes nulls
+          if (!isNaN(d)) {
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            
+            dataMap[dateStr] = r.status || 'present';
+            monthsSet.add(monthStr);
+          }
+        });
+
+        const sortedMonths = Array.from(monthsSet).sort();
+        setAttendanceData(dataMap);
+        setAvailableMonths(sortedMonths);
         
-        console.log("Fetched Attendance Dates:", datesArray); // Verify in browser console
-        setAttendanceDates(datesArray); // Save array to state
-      } else {
-        console.error("Backend Error or No Records:", records);
-        setAttendanceDates([]);
+        if (sortedMonths.length > 0) {
+          setCurrentMonthIndex(sortedMonths.length - 1); // Default to the most recent active month
+          setCalYear(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[0]));
+          setCalMonth(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[1]) - 1);
+        } else {
+          // Fallback if no records exist at all
+          setCalYear(new Date().getFullYear());
+          setCalMonth(new Date().getMonth());
+        }
       }
     } catch (error) {
       console.error("Failed to fetch student attendance", error);
-      setAttendanceDates([]);
     }
     setIsModalLoading(false);
   };
@@ -167,12 +180,16 @@ export default function FacultyRecords() {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   
   const shiftMonth = (offset) => {
-    let newMonth = calMonth + offset;
-    let newYear = calYear;
-    if (newMonth < 0) { newMonth = 11; newYear--; }
-    else if (newMonth > 11) { newMonth = 0; newYear++; }
-    setCalMonth(newMonth);
-    setCalYear(newYear);
+    if (availableMonths.length === 0) return;
+    
+    let newIndex = currentMonthIndex + offset;
+    // Lock navigation to only available months
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= availableMonths.length) newIndex = availableMonths.length - 1;
+    
+    setCurrentMonthIndex(newIndex);
+    setCalYear(parseInt(availableMonths[newIndex].split('-')[0]));
+    setCalMonth(parseInt(availableMonths[newIndex].split('-')[1]) - 1);
   };
 
   const renderCalendar = () => {
@@ -185,18 +202,18 @@ export default function FacultyRecords() {
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      // Build local string to check against our Array
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const status = attendanceData[dateString];
       
-      // Use .includes() since attendanceDates is now an Array
-      const isPresent = attendanceDates.includes(dateString);
-      
+      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500'; // Default Grey
+      if (status === 'present') {
+        styleClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]';
+      } else if (status === 'absent') {
+        styleClass = 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]';
+      }
+
       days.push(
-        <div key={day} className={`h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all ${
-          isPresent 
-            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
-            : 'bg-[#0b0f19] border border-[#1e293b] text-gray-500'
-        }`}>
+        <div key={day} className={`h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all ${styleClass}`}>
           {day}
         </div>
       );
@@ -330,13 +347,14 @@ export default function FacultyRecords() {
                 
                 {/* Calendar Navigation */}
                 <div className="flex items-center gap-4 bg-[#101524] px-4 py-2 rounded-xl border border-[#1e293b]">
-                  <button onClick={() => shiftMonth(-1)} className="text-gray-400 hover:text-white p-1"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                  <button onClick={() => shiftMonth(-1)} disabled={currentMonthIndex <= 0} className={`p-1 ${currentMonthIndex <= 0 ? 'text-gray-700' : 'text-gray-400 hover:text-white'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
                   <span className="text-white font-bold min-w-[120px] text-center">{monthNames[calMonth]} {calYear}</span>
-                  <button onClick={() => shiftMonth(1)} className="text-gray-400 hover:text-white p-1"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
+                  <button onClick={() => shiftMonth(1)} disabled={currentMonthIndex >= availableMonths.length - 1} className={`p-1 ${currentMonthIndex >= availableMonths.length - 1 ? 'text-gray-700' : 'text-gray-400 hover:text-white'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
                 
                 <div className="hidden sm:flex gap-3 text-xs text-gray-400 font-medium">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Present</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Absent</span>
                 </div>
               </div>
 

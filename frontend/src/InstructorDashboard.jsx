@@ -42,7 +42,14 @@ export default function InstructorDashboard() {
     }
   };
 
-  const stopSession = () => {
+  const stopSession = async () => {
+    const authToken = localStorage.getItem('token');
+    await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ classId })
+    });
+    
     setIsSessionActive(false);
     setToken(null);
     setTimeLeft(0);

@@ -146,4 +146,53 @@ router.get('/student/:id', protect, instructorOnly, async (req, res) => {
   }
 });
 
+// Get specific student's attendance for the calendar (Faculty Only)
+router.get('/student/:id', protect, instructorOnly, async (req, res) => {
+  try {
+    const records = await Attendance.find({ student: req.params.id }).sort({ createdAt: 1 });
+    res.status(200).json(records);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching student attendance', error: error.message });
+  }
+});
+
+// Stop Session and Mark Absentees
+router.post('/stop', protect, instructorOnly, async (req, res) => {
+  const { classId } = req.body;
+  const session = global.activeSessions[classId];
+
+  if (!session) return res.status(400).json({ message: 'No active session found.' });
+
+  try {
+    // Get all registered students
+    const User = require('../models/User');
+    const allStudents = await User.find({ role: 'student' });
+
+    const absentRecords = [];
+    
+    // Check who is missing from the memory tracker
+    allStudents.forEach(student => {
+      if (!session.markedStudents.has(student._id.toString())) {
+        absentRecords.push({
+          student: student._id,
+          sessionToken: 'MISSED',
+          status: 'absent'
+        });
+      }
+    });
+
+    // Bulk insert absent records
+    if (absentRecords.length > 0) {
+      await Attendance.insertMany(absentRecords);
+    }
+
+    // Destroy the live session
+    delete global.activeSessions[classId];
+
+    res.status(200).json({ message: 'Session stopped and absences recorded.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error stopping session', error: error.message });
+  }
+});
+
 module.exports = router;
