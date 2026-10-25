@@ -8,6 +8,7 @@ export default function StudentScanner() {
   const [isFlashOn, setIsFlashOn] = useState(false);
   const [facingMode, setFacingMode] = useState('environment'); 
   const [isFlipping, setIsFlipping] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [zoom, setZoom] = useState(1);
   
   const scannerRef = useRef(null);
@@ -26,6 +27,12 @@ export default function StudentScanner() {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
 
+    // Instantly freeze the camera feed and trigger the snap animation
+    if (scannerRef.current) {
+      scannerRef.current.pause(true); 
+    }
+    setIsCapturing(true);
+
     try {
       const qrData = JSON.parse(decodedText);
       const authToken = localStorage.getItem('token');
@@ -38,15 +45,21 @@ export default function StudentScanner() {
 
       const data = await res.json();
       if (res.ok) {
-        setIsMarked(true);
-        if (scannerRef.current?.isScanning) {
-          await scannerRef.current.stop();
-          scannerRef.current.clear();
-        }
+        // Hold the frozen frame for 600ms before showing the final success screen
+        setTimeout(async () => {
+          setIsCapturing(false);
+          setIsMarked(true);
+          if (scannerRef.current) {
+            await scannerRef.current.stop();
+            scannerRef.current.clear();
+          }
+        }, 600);
       } else {
         setMessage(`❌ ${data.message}`);
         setTimeout(() => {
           setMessage('');
+          setIsCapturing(false);
+          if (scannerRef.current) scannerRef.current.resume();
           isProcessingRef.current = false;
         }, 3000);
       }
@@ -54,6 +67,8 @@ export default function StudentScanner() {
       setMessage('❌ Invalid QR Format');
       setTimeout(() => {
         setMessage('');
+        setIsCapturing(false);
+        if (scannerRef.current) scannerRef.current.resume();
         isProcessingRef.current = false;
       }, 2000);
     }
@@ -198,11 +213,23 @@ export default function StudentScanner() {
           50% { transform: perspective(800px) rotateY(90deg) scale(0.8); opacity: 0.2; }
           100% { transform: perspective(800px) rotateY(0deg) scale(1); opacity: 1; }
         }
+
+        .flash-snap { animation: snap 0.4s ease-out forwards; }
+        @keyframes snap {
+          0% { opacity: 0; transform: scale(1); }
+          30% { opacity: 1; transform: scale(0.98); }
+          100% { opacity: 0; transform: scale(1); }
+        }
       `}</style>
 
-      {/* Scanner Container (Extended height & shifted up to center the scanning box visually above controls) */}
-      <div className={`absolute left-0 w-full h-[125vh] -top-[15vh] ${isFlipping ? 'flip-animate' : ''}`}>
+      {/* Scanner Container (Extended height & shifted further up to perfectly frame above the dock) */}
+      <div className={`absolute left-0 w-full h-[135vh] -top-[25vh] ${isFlipping ? 'flip-animate' : ''}`}>
         <div id="reader" className="w-full h-full flex items-center justify-center"></div>
+        
+        {/* The White Flash Overlay that triggers exactly when the QR is read */}
+        {isCapturing && (
+          <div className="absolute inset-0 bg-white z-40 pointer-events-none flash-snap"></div>
+        )}
       </div>
 
       {/* Zoom Slider */}
