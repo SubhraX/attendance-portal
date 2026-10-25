@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
+import FacultyRecords from './FacultyRecords'; // <-- Imported the new component
 
 export default function InstructorDashboard() {
   const [activeTab, setActiveTab] = useState('generate'); 
@@ -241,10 +242,8 @@ export default function InstructorDashboard() {
             
           </div>
         ) : (
-          <div className="w-full max-w-5xl bg-[#151b2b] rounded-2xl border border-[#1e293b] p-8 shadow-lg animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-white mb-6">Attendance Records</h2>
-            <p className="text-gray-400">Student list, Calendar View, and CSV/PDF export tools will be built here.</p>
-          </div>
+          /* Render the newly built FacultyRecords component here */
+          <FacultyRecords />
         )}
       </div>
     </div>
