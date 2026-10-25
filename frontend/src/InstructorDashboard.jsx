@@ -35,13 +35,18 @@ export default function InstructorDashboard() {
     const authToken = localStorage.getItem('token');
     const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/lock-network', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 
+        'Content-Type': 'application/json', // Added this
+        'Authorization': `Bearer ${authToken}` 
+      },
+      body: JSON.stringify({}) // Added this empty body
     });
     
     if (res.ok) {
       alert("Success: Attendance is now locked to your current Wi-Fi network.");
     } else {
-      alert("Error: Failed to lock network. Check permissions.");
+      const errorData = await res.json();
+      alert(`Error: ${errorData.message}`);
     }
   };
 
