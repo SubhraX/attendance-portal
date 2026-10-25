@@ -27,7 +27,9 @@ export default function StudentScanner() {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
 
-    // Instantly freeze the camera feed and trigger the snap animation
+    // Instant UPI-style haptic feedback
+    if (navigator.vibrate) navigator.vibrate(50);
+
     if (scannerRef.current) {
       scannerRef.current.pause(true); 
     }
@@ -45,7 +47,6 @@ export default function StudentScanner() {
 
       const data = await res.json();
       if (res.ok) {
-        // Hold the frozen frame for 600ms before showing the final success screen
         setTimeout(async () => {
           setIsCapturing(false);
           setIsMarked(true);
@@ -53,7 +54,7 @@ export default function StudentScanner() {
             await scannerRef.current.stop();
             scannerRef.current.clear();
           }
-        }, 600);
+        }, 400);
       } else {
         setMessage(`❌ ${data.message}`);
         setTimeout(() => {
@@ -61,10 +62,10 @@ export default function StudentScanner() {
           setIsCapturing(false);
           if (scannerRef.current) scannerRef.current.resume();
           isProcessingRef.current = false;
-        }, 3000);
+        }, 2000);
       }
     } catch (err) {
-      setMessage('❌ Invalid QR');
+      setMessage('❌ Invalid QR Format');
       setTimeout(() => {
         setMessage('');
         setIsCapturing(false);
@@ -86,7 +87,8 @@ export default function StudentScanner() {
     try {
       await scannerRef.current.start(
         { facingMode: mode },
-        { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+        // Increased FPS to 20 for faster, more aggressive QR detection
+        { fps: 20, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
         onScanSuccess,
         () => {} 
       );
@@ -94,7 +96,7 @@ export default function StudentScanner() {
       setZoom(1); 
     } catch (err) {
       console.error("Camera error:", err);
-      setMessage("Camera Denied");
+      setMessage("Camera access denied or unavailable.");
     }
   };
 
@@ -120,7 +122,7 @@ export default function StudentScanner() {
   const handleGalleryUpload = async (e) => {
     if (e.target.files.length === 0) return;
     const file = e.target.files[0];
-    setMessage('Scanning...');
+    setMessage('Scanning image...');
 
     try {
       const decodedText = await scannerRef.current?.scanFile(file, true);
@@ -128,7 +130,7 @@ export default function StudentScanner() {
          onScanSuccess(decodedText);
       }
     } catch (err) {
-      setMessage('❌ No QR Found');
+      setMessage('❌ No valid QR code found in image');
       setTimeout(() => setMessage(''), 2000);
     }
     e.target.value = ''; 
@@ -143,7 +145,7 @@ export default function StudentScanner() {
       });
       setIsFlashOn(newFlashState);
     } catch (error) {
-      setMessage('Flash Unsupported');
+      setMessage('Flash not supported on this device');
       setTimeout(() => setMessage(''), 2000);
     }
   };
@@ -166,7 +168,7 @@ export default function StudentScanner() {
     setTimeout(async () => {
       const newMode = facingMode === 'environment' ? 'user' : 'environment';
       setFacingMode(newMode);
-      setMessage('Flipping...');
+      setMessage('Switching camera...');
       await startCamera(newMode);
       setMessage('');
       setIsFlipping(false);
@@ -192,7 +194,6 @@ export default function StudentScanner() {
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans selection:bg-[#2563eb] selection:text-white">
       
-      {/* Top Nav */}
       <div className="absolute top-0 left-0 w-full p-5 flex items-center justify-between z-50 bg-gradient-to-b from-black/90 to-transparent">
         <button onClick={() => navigate('/')} className="text-white p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -201,7 +202,6 @@ export default function StudentScanner() {
         <div className="w-11"></div> 
       </div>
 
-      {/* Global Styles */}
       <style>{`
         #reader { width: 100% !important; height: 100% !important; background: black; position: relative; overflow: hidden; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; transform: ${facingMode === 'user' ? 'scaleX(-1)' : 'none'} !important; }
@@ -222,17 +222,13 @@ export default function StudentScanner() {
         }
       `}</style>
 
-      {/* Scanner Container */}
       <div className={`absolute left-0 w-full h-[135vh] -top-[25vh] ${isFlipping ? 'flip-animate' : ''}`}>
         <div id="reader" className="w-full h-full flex items-center justify-center"></div>
-        
-        {/* The White Flash Overlay */}
         {isCapturing && (
           <div className="absolute inset-0 bg-white z-40 pointer-events-none flash-snap"></div>
         )}
       </div>
 
-      {/* Zoom Slider */}
       <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-lg">
         <span className="text-white text-xs font-bold">1x</span>
         <input 
@@ -242,7 +238,6 @@ export default function StudentScanner() {
         <span className="text-white text-xs font-bold">5x</span>
       </div>
 
-      {/* Bottom Hardware Dock */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
@@ -267,10 +262,10 @@ export default function StudentScanner() {
         </div>
       </div>
 
-      {/* Centered Toast Message */}
+      {/* FIXED VIEWPORT POSITIONING & SMALL FONT */}
       {message && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-black/40 backdrop-blur-lg px-6 py-3 rounded-2xl border border-white/20 shadow-2xl animate-fade-in-up w-max max-w-[85%] text-center">
-          <p className="text-white font-medium text-sm tracking-wide leading-snug">{message}</p>
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] bg-black/70 backdrop-blur-xl px-5 py-2.5 rounded-[14px] border border-white/10 shadow-2xl w-auto max-w-[80vw] flex items-center justify-center pointer-events-none">
+          <p className="text-white font-medium text-xs text-center leading-snug whitespace-pre-wrap">{message}</p>
         </div>
       )}
     </div>
