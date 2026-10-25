@@ -98,4 +98,23 @@ router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
   }
 });
 
+// Edit a Student (Faculty Only)
+router.put('/student/:id', protect, instructorOnly, async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const student = await User.findById(req.params.id);
+    
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+    
+    if (name) student.name = name;
+    if (email) student.email = email;
+    if (password) student.password = password; // The pre-save hook will automatically hash the new password
+    
+    await student.save();
+    res.status(200).json({ message: 'Student updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error updating student', error: error.message });
+  }
+});
+
 module.exports = router;

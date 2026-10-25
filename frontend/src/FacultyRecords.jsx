@@ -5,10 +5,22 @@ export default function FacultyRecords() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Modal State
+  // Registration Modal State
+  const [showRegModal, setShowRegModal] = useState(false);
+  const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
+
+  // Student Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [attendanceDates, setAttendanceDates] = useState(new Set());
   const [isModalLoading, setIsModalLoading] = useState(false);
+  
+  // Edit Student State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', password: '' });
+
+  // Calendar State
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
 
   useEffect(() => {
     fetchStudents();
@@ -29,9 +41,36 @@ export default function FacultyRecords() {
     setLoading(false);
   };
 
+  const handleRegisterStudent = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...regForm, role: 'student' })
+      });
+      if (res.ok) {
+        alert("Student registered successfully!");
+        setShowRegModal(false);
+        setRegForm({ name: '', email: '', password: '' });
+        fetchStudents();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Registration failed');
+      }
+    } catch (error) {
+      alert("Error connecting to server");
+    }
+  };
+
   const openStudentModal = async (student) => {
     setSelectedStudent(student);
+    setIsEditing(false);
+    setEditForm({ name: student.name, email: student.email, password: '' });
+    setCalYear(new Date().getFullYear());
+    setCalMonth(new Date().getMonth());
     setIsModalLoading(true);
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${student._id}`, {
@@ -40,14 +79,43 @@ export default function FacultyRecords() {
       const records = await res.json();
       
       if (res.ok) {
-        // Extract just the dates (YYYY-MM-DD) into a Set for fast calendar lookup
-        const dates = new Set(records.map(r => new Date(r.createdAt).toISOString().split('T')[0]));
+        // FIX: Extract strictly local YYYY-MM-DD to fix the timezone offset bug
+        const dates = new Set(records.map(r => {
+          const d = new Date(r.createdAt);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }));
         setAttendanceDates(dates);
       }
     } catch (error) {
       console.error("Failed to fetch student attendance", error);
     }
     setIsModalLoading(false);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const payload = { name: editForm.name, email: editForm.email };
+      if (editForm.password) payload.password = editForm.password;
+
+      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${selectedStudent._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert("Student updated successfully!");
+        setIsEditing(false);
+        fetchStudents();
+        setSelectedStudent({ ...selectedStudent, name: editForm.name, email: editForm.email });
+      } else {
+        alert("Failed to update student");
+      }
+    } catch (error) {
+      alert("Error updating student");
+    }
   };
 
   const handleResetDevice = async (studentId) => {
@@ -62,7 +130,7 @@ export default function FacultyRecords() {
       if (res.ok) {
         alert("Device unlocked successfully.");
         fetchStudents();
-        setSelectedStudent(null);
+        setSelectedStudent({ ...selectedStudent, deviceId: null });
       }
     } catch (error) {
       alert('Failed to reset device');
@@ -87,29 +155,30 @@ export default function FacultyRecords() {
     }
   };
 
-  const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Calendar rendering logic
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+  const shiftMonth = (offset) => {
+    let newMonth = calMonth + offset;
+    let newYear = calYear;
+    if (newMonth < 0) { newMonth = 11; newYear--; }
+    else if (newMonth > 11) { newMonth = 0; newYear++; }
+    setCalMonth(newMonth);
+    setCalYear(newYear);
+  };
 
-  // --- Calendar Generator Logic ---
   const renderCalendar = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
     
     const days = [];
-    // Empty slots before the 1st of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10"></div>);
     }
     
-    // Actual days
     for (let day = 1; day <= daysInMonth; day++) {
-      // Format current day to YYYY-MM-DD to check against our Set
-      const dateString = new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
+      // Build local string to check against our fixed Set
+      const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const isPresent = attendanceDates.has(dateString);
       
       days.push(
@@ -125,23 +194,38 @@ export default function FacultyRecords() {
     return days;
   };
 
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    s.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col h-full">
-      {/* Header & Search */}
-      <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 bg-[#151b2b] p-6 rounded-2xl border border-[#1e293b] shadow-lg">
+    <div className="w-full max-w-6xl mx-auto flex flex-col h-full relative">
+      
+      {/* Header & Controls */}
+      <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center mb-8 gap-4 bg-[#151b2b] p-6 rounded-2xl border border-[#1e293b] shadow-lg">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-wide">Student Directory</h2>
           <p className="text-gray-400 text-sm mt-1">Manage enrollments and view visual attendance</p>
         </div>
-        <div className="relative w-full md:w-72">
-          <svg className="w-5 h-5 absolute left-3 top-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-          <input 
-            type="text" 
-            placeholder="Search students..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#5c98ff] transition-colors"
-          />
+        <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-4">
+          <button 
+            onClick={() => setShowRegModal(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+            Register Student
+          </button>
+          <div className="relative w-full sm:w-72">
+            <svg className="w-5 h-5 absolute left-3 top-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input 
+              type="text" 
+              placeholder="Search students..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#5c98ff] transition-colors"
+            />
+          </div>
         </div>
       </div>
 
@@ -157,26 +241,19 @@ export default function FacultyRecords() {
               <div 
                 key={student._id} 
                 onClick={() => openStudentModal(student)}
-                className="bg-[#151b2b] border border-[#1e293b] rounded-2xl p-5 hover:border-[#5c98ff] hover:shadow-[0_0_20px_rgba(92,152,255,0.1)] cursor-pointer transition-all group relative overflow-hidden"
+                className="bg-[#151b2b] border border-[#1e293b] rounded-2xl p-5 hover:border-[#5c98ff] hover:shadow-[0_0_20px_rgba(92,152,255,0.1)] cursor-pointer transition-all group relative overflow-hidden flex flex-col"
               >
-                {/* Visual Indicator for Device Lock */}
                 <div className={`absolute top-0 right-0 w-2 h-full ${student.deviceId ? 'bg-emerald-500/50' : 'bg-orange-500/50'}`}></div>
-                
                 <div className="w-12 h-12 rounded-full bg-[#2563eb]/20 text-[#5c98ff] flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
                   {student.name.charAt(0).toUpperCase()}
                 </div>
                 <h3 className="text-white font-bold text-lg truncate">{student.name}</h3>
                 <p className="text-gray-400 text-xs truncate mb-4">{student.email}</p>
-                
-                <div className="flex items-center gap-2 text-xs font-medium">
+                <div className="mt-auto flex items-center gap-2 text-xs font-medium">
                   {student.deviceId ? (
-                    <span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Device Locked
-                    </span>
+                    <span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Device Locked</span>
                   ) : (
-                    <span className="bg-orange-500/10 text-orange-400 px-2.5 py-1 rounded-md border border-orange-500/20 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Unlocked
-                    </span>
+                    <span className="bg-orange-500/10 text-orange-400 px-2.5 py-1 rounded-md border border-orange-500/20 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Unlocked</span>
                   )}
                 </div>
               </div>
@@ -185,39 +262,71 @@ export default function FacultyRecords() {
         </div>
       )}
 
-      {/* Modern Modal overlay for Student Details */}
+      {/* REGISTRATION MODAL */}
+      {showRegModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
+          <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-md shadow-2xl p-8 relative">
+            <button onClick={() => setShowRegModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <h3 className="text-2xl font-bold text-white mb-6">Register New Student</h3>
+            <form onSubmit={handleRegisterStudent} className="flex flex-col gap-4">
+              <input type="text" placeholder="Full Name" required value={regForm.name} onChange={e => setRegForm({...regForm, name: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
+              <input type="email" placeholder="Email Address" required value={regForm.email} onChange={e => setRegForm({...regForm, email: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
+              <input type="password" placeholder="Password" required value={regForm.password} onChange={e => setRegForm({...regForm, password: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
+              <button type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all">Create Account</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* STUDENT DETAILS & CALENDAR MODAL */}
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
-          <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative">
+          <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh]">
             
-            {/* Close Button */}
-            <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full transition-colors z-10"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
 
             {/* Modal Header */}
-            <div className="p-8 border-b border-[#1e293b] bg-gradient-to-b from-[#101524] to-[#151b2b]">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-full bg-[#2563eb]/20 text-[#5c98ff] flex items-center justify-center font-bold text-3xl shadow-inner">
+            <div className="p-8 border-b border-[#1e293b] bg-gradient-to-b from-[#101524] to-[#151b2b] relative">
+              <button 
+                onClick={() => setIsEditing(!isEditing)} 
+                className="absolute top-6 right-16 text-xs font-bold bg-[#2563eb]/20 text-[#5c98ff] px-3 py-1.5 rounded-lg hover:bg-[#2563eb]/40 transition-colors"
+              >
+                {isEditing ? 'Cancel Edit' : 'Edit Info'}
+              </button>
+              
+              <div className="flex items-center gap-5 mt-4">
+                <div className="w-16 h-16 rounded-full bg-[#2563eb]/20 text-[#5c98ff] flex items-center justify-center font-bold text-3xl shadow-inner shrink-0">
                   {selectedStudent.name.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white">{selectedStudent.name}</h3>
-                  <p className="text-gray-400 text-sm">{selectedStudent.email}</p>
-                </div>
+                {isEditing ? (
+                  <form onSubmit={handleEditSubmit} className="flex flex-col gap-2 w-full">
+                    <input type="text" required value={editForm.name} onChange={e=>setEditForm({...editForm, name: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-1.5 text-sm" />
+                    <input type="email" required value={editForm.email} onChange={e=>setEditForm({...editForm, email: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-1.5 text-sm" />
+                    <input type="password" placeholder="New password (optional)" value={editForm.password} onChange={e=>setEditForm({...editForm, password: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-1.5 text-sm" />
+                    <button type="submit" className="bg-[#2563eb] text-white text-xs font-bold py-1.5 rounded-lg">Save Changes</button>
+                  </form>
+                ) : (
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">{selectedStudent.name}</h3>
+                    <p className="text-gray-400 text-sm">{selectedStudent.email}</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Visual Calendar Body */}
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-white font-semibold flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#5c98ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                  Current Month Attendance
-                </h4>
-                <div className="flex gap-3 text-xs text-gray-400 font-medium">
+            <div className="p-8 overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                
+                {/* Calendar Navigation */}
+                <div className="flex items-center gap-4 bg-[#101524] px-4 py-2 rounded-xl border border-[#1e293b]">
+                  <button onClick={() => shiftMonth(-1)} className="text-gray-400 hover:text-white p-1"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                  <span className="text-white font-bold min-w-[120px] text-center">{monthNames[calMonth]} {calYear}</span>
+                  <button onClick={() => shiftMonth(1)} className="text-gray-400 hover:text-white p-1"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
+                </div>
+                
+                <div className="hidden sm:flex gap-3 text-xs text-gray-400 font-medium">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Present</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-600"></span> Absent/No Class</span>
                 </div>
               </div>
 
@@ -225,11 +334,9 @@ export default function FacultyRecords() {
                 <div className="h-48 flex items-center justify-center text-gray-500">Loading calendar...</div>
               ) : (
                 <div className="bg-[#101524] border border-[#1e293b] p-5 rounded-2xl">
-                  {/* Days of Week Header */}
                   <div className="grid grid-cols-7 gap-2 mb-3 text-center text-xs font-bold text-gray-500 uppercase">
                     <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
                   </div>
-                  {/* Calendar Grid */}
                   <div className="grid grid-cols-7 gap-2">
                     {renderCalendar()}
                   </div>
@@ -238,21 +345,18 @@ export default function FacultyRecords() {
             </div>
 
             {/* Actions Footer */}
-            <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex gap-4">
+            <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex gap-4 shrink-0 mt-auto">
               <button 
                 onClick={() => handleResetDevice(selectedStudent._id)}
                 disabled={!selectedStudent.deviceId}
-                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm
-                disabled:opacity-50 disabled:cursor-not-allowed
-                bg-[#2563eb]/10 text-[#5c98ff] border border-[#2563eb]/30 hover:bg-[#2563eb]/20"
+                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-[#2563eb]/10 text-[#5c98ff] border border-[#2563eb]/30 hover:bg-[#2563eb]/20"
               >
-                {selectedStudent.deviceId ? 'Unlock Device ID' : 'Device Already Unlocked'}
+                {selectedStudent.deviceId ? 'Unlock Device' : 'Device Unlocked'}
               </button>
               
               <button 
                 onClick={() => handleRemoveStudent(selectedStudent._id)}
-                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm
-                bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 hover:text-red-400"
+                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 hover:text-red-400"
               >
                 Delete Student
               </button>
