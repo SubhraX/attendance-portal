@@ -2,24 +2,26 @@ import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 
 export default function InstructorDashboard() {
-  const [activeTab, setActiveTab] = useState('live'); 
+  const [activeTab, setActiveTab] = useState('generate'); 
   const [token, setToken] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [qrDuration, setQrDuration] = useState(30);
+  const [qrDuration, setQrDuration] = useState(120);
   const [isNetworkLocked, setIsNetworkLocked] = useState(false);
-  const classId = 'CS101'; 
+  const [classId, setClassId] = useState('CS101'); 
 
   const startSession = async () => {
+    if (!classId.trim()) return alert("Please enter a Target Class.");
+    
     const authToken = localStorage.getItem('token');
     const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-      body: JSON.stringify({ classId, qrDuration })
+      body: JSON.stringify({ classId: classId.trim(), qrDuration })
     });
     
     if(res.ok) {
       const socket = new WebSocket('wss://attendance-portal-p2lp.onrender.com');
-      socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId, duration: qrDuration }));
+      socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId: classId.trim(), duration: qrDuration }));
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === 'NEW_QR_TOKEN') {
@@ -64,7 +66,6 @@ export default function InstructorDashboard() {
     }
   }, [timeLeft]);
 
-  // Fixes the counter bug by converting raw seconds into MM:SS format
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -72,43 +73,85 @@ export default function InstructorDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
+    <div className="min-h-screen bg-[#0b0f19] text-gray-200 flex font-sans selection:bg-blue-600 selection:text-white">
       
       {/* Sidebar Navigation */}
-      <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col p-6 shadow-xl z-10">
-        <h2 className="text-2xl font-extrabold text-white tracking-tight mb-8">Faculty<span className="text-blue-500">Panel</span></h2>
+      <div className="w-64 bg-[#101524] border-r border-[#1e293b] flex flex-col p-6 shadow-2xl z-10">
+        <h2 className="text-xl font-extrabold text-white tracking-tight mb-10 flex items-center gap-2">
+          Faculty<span className="text-[#5c98ff]">Panel</span>
+        </h2>
         <div className="flex flex-col gap-3">
-          <button onClick={() => setActiveTab('live')} className={`px-4 py-3 rounded-lg font-bold text-left transition-all ${activeTab === 'live' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-            📡 Live Session
+          <button 
+            onClick={() => setActiveTab('generate')} 
+            className={`px-4 py-3 rounded-xl font-semibold text-left transition-all duration-300 flex items-center gap-3 ${activeTab === 'generate' ? 'bg-[#2563eb] text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'text-gray-400 hover:bg-[#1a2332] hover:text-gray-200'}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+            Generate QR
           </button>
-          <button onClick={() => setActiveTab('records')} className={`px-4 py-3 rounded-lg font-bold text-left transition-all ${activeTab === 'records' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-            📋 Student Records
+          <button 
+            onClick={() => setActiveTab('records')} 
+            className={`px-4 py-3 rounded-xl font-semibold text-left transition-all duration-300 flex items-center gap-3 ${activeTab === 'records' ? 'bg-[#2563eb] text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'text-gray-400 hover:bg-[#1a2332] hover:text-gray-200'}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Student Records
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 p-8 flex flex-col items-center overflow-y-auto">
-        {activeTab === 'live' ? (
-          <div className="w-full max-w-4xl">
+      <div className="flex-1 p-10 flex flex-col items-center overflow-y-auto">
+        {activeTab === 'generate' ? (
+          <div className="w-full max-w-4xl animate-fade-in-up">
             
             {/* Controls Card */}
-            <div className="flex flex-col md:flex-row justify-between items-center mb-12 p-6 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg">
-              <div>
-                <h2 className="text-2xl font-bold text-blue-400 mb-1">Session Dashboard</h2>
-                <p className="text-slate-400 mb-4">Target Class: {classId}</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 p-8 bg-[#151b2b] rounded-2xl border border-[#1e293b] shadow-lg transition-all">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-[#5c98ff] mb-2 tracking-wide">Session Dashboard</h2>
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="text-gray-400 text-sm">Target Class:</span>
+                  <input 
+                    type="text" 
+                    value={classId} 
+                    onChange={(e) => setClassId(e.target.value.toUpperCase())} 
+                    className="bg-transparent border-b border-gray-600 text-white font-mono focus:outline-none focus:border-[#5c98ff] w-24 text-sm px-1 transition-colors" 
+                    placeholder="E.g. CS101"
+                  />
+                </div>
                 
-                <div className="flex items-center gap-4 bg-slate-950 p-3 rounded-lg border border-slate-700">
-                  <label className="text-sm font-semibold text-slate-300">QR Refresh (Seconds):</label>
-                  <input type="number" min="5" max="300" value={qrDuration} onChange={(e) => setQrDuration(Number(e.target.value))} className="w-20 bg-slate-800 text-white p-1 rounded text-center focus:outline-none focus:border-blue-500" />
+                <div className="flex items-center gap-4 bg-[#0b0f19] px-4 py-3 rounded-xl border border-[#1e293b] w-max">
+                  <label className="text-sm font-semibold text-gray-300">QR Refresh (Seconds):</label>
+                  <input 
+                    type="number" 
+                    min="5" 
+                    max="300" 
+                    value={qrDuration} 
+                    onChange={(e) => setQrDuration(Number(e.target.value))} 
+                    className="w-16 bg-[#1a2332] text-white border border-[#2a3a54] p-1.5 rounded-lg text-center font-mono text-sm focus:outline-none focus:border-[#5c98ff] transition-all" 
+                  />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 mt-6 md:mt-0">
-                <button onClick={toggleNetworkLock} className={`px-6 py-2 rounded-lg font-bold transition-all text-sm border ${isNetworkLocked ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800 hover:bg-emerald-900/50' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}>
-                  {isNetworkLocked ? '🔒 Network Locked' : '🔓 Unlocked (Click to Lock)'}
-                </button>
-                <button onClick={startSession} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all">
+              <div className="flex flex-col gap-4 mt-6 md:mt-0 items-end min-w-[240px]">
+                {/* Custom Toggle Switch */}
+                <div 
+                  onClick={toggleNetworkLock}
+                  className="flex items-center gap-3 bg-[#0b0f19] border border-[#1e293b] px-4 py-2.5 rounded-xl cursor-pointer hover:border-gray-600 transition-colors w-full justify-between group"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{isNetworkLocked ? '🔒' : '🔓'}</span>
+                    <span className={`text-sm font-medium transition-colors ${isNetworkLocked ? 'text-emerald-400' : 'text-gray-400 group-hover:text-gray-300'}`}>
+                      {isNetworkLocked ? 'Locked to Campus Wi-Fi' : 'Unlocked (Click to Lock)'}
+                    </span>
+                  </div>
+                  <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isNetworkLocked ? 'bg-emerald-500' : 'bg-gray-600'}`}>
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isNetworkLocked ? 'translate-x-4' : 'translate-x-1'}`} />
+                  </div>
+                </div>
+
+                <button 
+                  onClick={startSession} 
+                  className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all w-full active:scale-95"
+                >
                   Start Live Session
                 </button>
               </div>
@@ -116,21 +159,28 @@ export default function InstructorDashboard() {
             
             {/* QR Projection */}
             {token && (
-              <div className="text-center bg-slate-900 p-8 border border-slate-800 rounded-2xl animate-fade-in-up shadow-2xl max-w-lg mx-auto">
-                <h3 className="text-xl font-semibold mb-6 text-slate-300">Project for Student Scanning</h3>
-                <div className="flex justify-center p-4 bg-white rounded-xl inline-block shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                   <QRCode value={JSON.stringify({ classId, token })} size={320} />
+              <div className="text-center bg-[#151b2b] p-10 border border-[#1e293b] rounded-3xl shadow-2xl max-w-lg mx-auto transform transition-all hover:scale-[1.02]">
+                <h3 className="text-lg font-medium mb-6 text-gray-300 tracking-wide">Project for Student Scanning</h3>
+                
+                {/* Fixed QR Padding */}
+                <div className="flex justify-center p-6 bg-white rounded-2xl inline-block shadow-inner">
+                   <QRCode 
+                     value={JSON.stringify({ classId, token })} 
+                     size={240} 
+                     style={{ height: "auto", maxWidth: "100%", width: "100%" }} 
+                   />
                 </div>
-                <p className="text-emerald-400 font-mono font-extrabold mt-6 text-4xl tracking-wider">
+                
+                <p className="text-[#2dd4bf] font-mono font-extrabold mt-8 text-4xl tracking-widest drop-shadow-[0_0_10px_rgba(45,212,191,0.4)]">
                   {formatTime(timeLeft)}
                 </p>
               </div>
             )}
           </div>
         ) : (
-          <div className="w-full max-w-5xl bg-slate-900 rounded-2xl border border-slate-800 p-8 shadow-lg">
+          <div className="w-full max-w-5xl bg-[#151b2b] rounded-2xl border border-[#1e293b] p-8 shadow-lg animate-fade-in-up">
             <h2 className="text-2xl font-bold text-white mb-6">Attendance Records</h2>
-            <p className="text-slate-400">Student list, Calendar View, and CSV/PDF export tools will be built here.</p>
+            <p className="text-gray-400">Student list, Calendar View, and CSV/PDF export tools will be built here.</p>
           </div>
         )}
       </div>
