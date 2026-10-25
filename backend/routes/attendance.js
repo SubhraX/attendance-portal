@@ -34,7 +34,7 @@ router.post('/start', protect, instructorOnly, (req, res) => {
     currentToken: token, 
     expiresAt,
     instructorIP: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress,
-    markedStudents: new Set() // <-- NEW: Memory tracker for the live session
+    markedStudents: new Set() // Memory tracker for the live session
   };
 
   res.status(200).json({ message: 'Session started', token, expiresAt });
@@ -54,7 +54,7 @@ router.post('/mark', protect, async (req, res) => {
     return res.status(400).json({ message: 'No active attendance session for this class' });
   }
 
-  // NEW: Instantly block if they already scanned during this live session
+  // Instantly block if they already scanned during this live session
   const studentIdStr = req.user._id.toString();
   if (session.markedStudents.has(studentIdStr)) {
     return res.status(400).json({ message: 'Attendance already marked for this session' });
@@ -84,7 +84,7 @@ router.post('/mark', protect, async (req, res) => {
       ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress
     });
 
-    // NEW: Add student to memory lock to instantly block subsequent scans
+    // Add student to memory lock to instantly block subsequent scans
     session.markedStudents.add(studentIdStr);
 
     // Broadcast to the faculty panel in real-time
@@ -101,6 +101,38 @@ router.post('/mark', protect, async (req, res) => {
     res.status(200).json({ message: 'Attendance marked successfully', record });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get Attendance History (Faculty Only)
+router.get('/history', protect, instructorOnly, async (req, res) => {
+  try {
+    const { date, classId } = req.query;
+    let filter = {};
+
+    // Optional date filtering (Expects format: YYYY-MM-DD)
+    if (date) {
+      const startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+      
+      filter.createdAt = { $gte: startDate, $lte: endDate };
+    }
+    
+    // Fetch records, populate student profiles, and sort newest first
+    const records = await Attendance.find(filter)
+      .populate('student', 'name email deviceId')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ 
+      count: records.length, 
+      records 
+    });
+  } catch (error) {
+    console.error("History API Error:", error);
+    res.status(500).json({ message: 'Server error fetching history', error: error.message });
   }
 });
 
