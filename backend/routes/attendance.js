@@ -14,6 +14,12 @@ router.post('/lock-network', protect, instructorOnly, (req, res) => {
   res.json({ message: 'Network locked successfully', ip: lockedCampusIP });
 });
 
+// Unlock Network Route
+router.post('/unlock-network', protect, instructorOnly, (req, res) => {
+  lockedCampusIP = null;
+  res.json({ message: 'Network unlocked. Attendance can now be marked from any IP.' });
+});
+
 // Start Session
 router.post('/start', protect, instructorOnly, (req, res) => {
   const { classId, qrDuration } = req.body;
