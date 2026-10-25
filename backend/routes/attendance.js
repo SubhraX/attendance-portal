@@ -77,6 +77,17 @@ router.post('/mark', protect, async (req, res) => {
       ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress
     });
 
+    // Broadcast to the faculty panel in real-time
+    if (global.facultySockets && global.facultySockets[classId]) {
+      global.facultySockets[classId].send(JSON.stringify({
+        type: 'STUDENT_MARKED',
+        student: {
+          name: req.user.name, 
+          email: req.user.email
+        }
+      }));
+    }
+
     res.status(200).json({ message: 'Attendance marked successfully', record });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

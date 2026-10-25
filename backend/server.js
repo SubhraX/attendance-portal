@@ -3,7 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
 const { WebSocketServer } = require('ws');
-const crypto = require('crypto'); // <-- Added for token rotation
+const crypto = require('crypto');
 const connectDB = require('./config/db'); 
 const authRoutes = require('./routes/auth'); 
 const attendanceRoutes = require('./routes/attendance'); 
@@ -14,6 +14,9 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+
+// Initialize global object to store active faculty WebSocket connections
+global.facultySockets = {};
 
 // Middleware
 app.use(cors());
@@ -37,6 +40,11 @@ wss.on('connection', (ws) => {
     
     if (data.action === 'startRotation') {
       const classId = data.classId;
+      // Convert frontend duration (seconds) to milliseconds, default to 30s
+      const durationMs = (data.duration || 30) * 1000; 
+      
+      // Save the faculty's websocket connection so the /mark route can broadcast to it
+      global.facultySockets[classId] = ws;
       
       const emitToken = () => {
         // Retrieve the active token created by the /start route
@@ -48,20 +56,23 @@ wss.on('connection', (ws) => {
 
       emitToken(); // Send initial token
 
-      // Rotate token every 30 seconds
+      // Rotate token based on the duration set in the faculty panel
       const interval = setInterval(() => {
         if (global.activeSessions && global.activeSessions[classId]) {
           const newToken = crypto.randomBytes(16).toString('hex');
           global.activeSessions[classId].currentToken = newToken;
-          global.activeSessions[classId].expiresAt = Date.now() + 30 * 1000;
+          global.activeSessions[classId].expiresAt = Date.now() + durationMs;
           emitToken();
         }
-      }, 30000);
+      }, durationMs);
 
-      // Clean up interval on disconnect
+      // Clean up interval and socket mapping on disconnect
       ws.on('close', () => {
         console.log('Client disconnected, stopping rotation');
         clearInterval(interval);
+        if (global.facultySockets[classId] === ws) {
+          delete global.facultySockets[classId];
+        }
       });
     }
   });
