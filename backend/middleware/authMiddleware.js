@@ -1,4 +1,3 @@
-// backend/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -10,22 +9,28 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       req.user = await User.findById(decoded.id).select('-password');
-      next();
+      
+      // Prevent 500 crash if the user was deleted but token is still active
+      if (!req.user) {
+        return res.status(401).json({ message: 'User no longer exists. Please log in again.' });
+      }
+
+      return next(); // CRITICAL: Must return to stop execution
     } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
 
 const instructorOnly = (req, res, next) => {
   if (req.user && req.user.role === 'instructor') {
-    next();
+    return next(); // CRITICAL: Must return
   } else {
-    res.status(403).json({ message: 'Not authorized as an instructor' });
+    return res.status(403).json({ message: 'Not authorized as an instructor' });
   }
 };
 
