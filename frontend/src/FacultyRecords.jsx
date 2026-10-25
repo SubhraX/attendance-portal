@@ -11,7 +11,7 @@ export default function FacultyRecords() {
 
   // Student Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [attendanceDates, setAttendanceDates] = useState(new Set());
+  const [attendanceDates, setAttendanceDates] = useState([]);
   const [isModalLoading, setIsModalLoading] = useState(false);
   
   // Edit Student State
@@ -73,21 +73,29 @@ export default function FacultyRecords() {
 
     try {
       const token = localStorage.getItem('token');
+      // Fetch attendance history for this specific student
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${student._id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const records = await res.json();
       
-      if (res.ok) {
-        // FIX: Extract strictly local YYYY-MM-DD to fix the timezone offset bug
-        const dates = new Set(records.map(r => {
-          const d = new Date(r.createdAt);
+      if (res.ok && Array.isArray(records)) {
+        // Convert to an array of strictly formatted YYYY-MM-DD strings
+        const datesArray = records.map(r => {
+          const d = new Date(r.createdAt || r.date);
+          if (isNaN(d)) return null;
           return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }));
-        setAttendanceDates(dates);
+        }).filter(Boolean); // Removes nulls
+        
+        console.log("Fetched Attendance Dates:", datesArray); // Verify in browser console
+        setAttendanceDates(datesArray); // Save array to state
+      } else {
+        console.error("Backend Error or No Records:", records);
+        setAttendanceDates([]);
       }
     } catch (error) {
       console.error("Failed to fetch student attendance", error);
+      setAttendanceDates([]);
     }
     setIsModalLoading(false);
   };
@@ -177,9 +185,11 @@ export default function FacultyRecords() {
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      // Build local string to check against our fixed Set
+      // Build local string to check against our Array
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const isPresent = attendanceDates.has(dateString);
+      
+      // Use .includes() since attendanceDates is now an Array
+      const isPresent = attendanceDates.includes(dateString);
       
       days.push(
         <div key={day} className={`h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all ${
