@@ -6,14 +6,15 @@ export default function StudentScanner() {
   const [message, setMessage] = useState('');
   const [isMarked, setIsMarked] = useState(false);
   const [isFlashOn, setIsFlashOn] = useState(false);
-  const [facingMode, setFacingMode] = useState('environment'); // 'environment' (back) or 'user' (front)
+  const [facingMode, setFacingMode] = useState('environment'); 
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [zoom, setZoom] = useState(1);
   
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
-  const isProcessingRef = useRef(false); // Prevents duplicate scans while fetching
+  const isProcessingRef = useRef(false); 
   const navigate = useNavigate();
 
-  // Auto-redirect upon success
   useEffect(() => {
     if (isMarked) {
       const timer = setTimeout(() => navigate('/'), 3000);
@@ -21,7 +22,6 @@ export default function StudentScanner() {
     }
   }, [isMarked, navigate]);
 
-  // Handle successful QR read (from live camera or gallery file)
   const onScanSuccess = useCallback(async (decodedText) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
@@ -59,45 +59,48 @@ export default function StudentScanner() {
     }
   }, []);
 
-  // Initialize and manage the live camera stream
+  const startCamera = async (mode) => {
+    if (!scannerRef.current) {
+      scannerRef.current = new Html5Qrcode("reader");
+    }
+
+    if (scannerRef.current.isScanning) {
+      await scannerRef.current.stop();
+    }
+
+    try {
+      await scannerRef.current.start(
+        { facingMode: mode },
+        { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+        onScanSuccess,
+        () => {} 
+      );
+      setIsFlashOn(false);
+      setZoom(1); // Reset zoom on camera switch
+    } catch (err) {
+      console.error("Camera error:", err);
+      setMessage("Camera access denied or unavailable.");
+    }
+  };
+
   useEffect(() => {
     if (isMarked) return;
-
-    const initializeCamera = async () => {
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode("reader");
+    
+    let isMounted = true;
+    startCamera(facingMode).then(() => {
+      if (!isMounted && scannerRef.current?.isScanning) {
+        scannerRef.current.stop();
       }
+    });
 
-      // If already scanning, stop it before switching cameras (e.g. flipping)
-      if (scannerRef.current.isScanning) {
-        await scannerRef.current.stop();
-      }
-
-      try {
-        await scannerRef.current.start(
-          { facingMode: facingMode },
-          { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
-          onScanSuccess,
-          () => {} // Ignore scan failure frames
-        );
-        setIsFlashOn(false); // Hardware flash resets on camera start
-      } catch (err) {
-        console.error("Camera error:", err);
-        setMessage("Camera access denied or unavailable.");
-      }
-    };
-
-    initializeCamera();
-
-    // Cleanup on unmount
     return () => {
+      isMounted = false;
       if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop().then(() => scannerRef.current.clear()).catch(console.error);
+        scannerRef.current.stop().catch(console.error);
       }
     };
-  }, [facingMode, isMarked, onScanSuccess]);
-
-  // --- Hardware Control Methods ---
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   const handleGalleryUpload = async (e) => {
     if (e.target.files.length === 0) return;
@@ -113,7 +116,7 @@ export default function StudentScanner() {
       setMessage('❌ No valid QR code found in image');
       setTimeout(() => setMessage(''), 2000);
     }
-    e.target.value = ''; // Reset input
+    e.target.value = ''; 
   };
 
   const toggleFlash = async () => {
@@ -125,18 +128,35 @@ export default function StudentScanner() {
       });
       setIsFlashOn(newFlashState);
     } catch (error) {
-      setMessage('Flash not supported on this device/browser');
+      setMessage('Flash not supported on this device');
       setTimeout(() => setMessage(''), 2000);
     }
   };
 
-  const flipCamera = () => {
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-    setMessage('Switching camera...');
-    setTimeout(() => setMessage(''), 1000);
+  const handleZoom = async (e) => {
+    const newZoom = Number(e.target.value);
+    setZoom(newZoom);
+    if (!scannerRef.current || !scannerRef.current.isScanning) return;
+    try {
+      await scannerRef.current.applyVideoConstraints({
+        advanced: [{ zoom: newZoom }]
+      });
+    } catch (error) {
+      // Zoom not supported by hardware/browser, fail silently like native apps
+    }
   };
 
-  // --- Render UI ---
+  const flipCamera = () => {
+    setIsFlipping(true);
+    setTimeout(async () => {
+      const newMode = facingMode === 'environment' ? 'user' : 'environment';
+      setFacingMode(newMode);
+      setMessage('Switching camera...');
+      await startCamera(newMode);
+      setMessage('');
+      setIsFlipping(false);
+    }, 300); // Swap camera halfway through the animation
+  };
 
   if (isMarked) {
     return (
@@ -157,64 +177,91 @@ export default function StudentScanner() {
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans selection:bg-[#2563eb] selection:text-white">
       
-      {/* Top Navigation */}
+      {/* Top Nav */}
       <div className="absolute top-0 left-0 w-full p-5 flex items-center justify-between z-50 bg-gradient-to-b from-black/90 to-transparent">
         <button onClick={() => navigate('/')} className="text-white p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
         </button>
         <h1 className="text-white font-semibold text-lg tracking-wider drop-shadow-md">Scan QR</h1>
         <div className="w-11"></div> 
       </div>
 
+      {/* Global Styles for Animations and Scanner Overrides */}
       <style>{`
-        /* Because we switched to the core Html5Qrcode API, we don't have to hide buttons anymore, just style the raw video feed */
         #reader { width: 100% !important; height: 100vh !important; background: black; position: relative; overflow: hidden; }
-        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; }
-        #qr-shaded-region { border-color: rgba(0, 0, 0, 0.6) !important; z-index: 10 !important; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; transform: ${facingMode === 'user' ? 'scaleX(-1)' : 'none'} !important; }
+        #qr-shaded-region { border-color: rgba(0, 0, 0, 0.7) !important; z-index: 10 !important; }
+        
+        .flip-animate { animation: flip-cam 0.6s ease-in-out; }
+        @keyframes flip-cam {
+          0% { transform: perspective(800px) rotateY(0deg) scale(1); opacity: 1; }
+          50% { transform: perspective(800px) rotateY(90deg) scale(0.8); opacity: 0.2; }
+          100% { transform: perspective(800px) rotateY(0deg) scale(1); opacity: 1; }
+        }
+
+        .laser {
+          position: absolute;
+          width: 100%;
+          height: 2px;
+          background: #34d399; /* emerald-400 */
+          box-shadow: 0 0 15px 3px rgba(52, 211, 153, 0.6);
+          animation: scan 2.5s infinite linear;
+        }
+        @keyframes scan {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
       `}</style>
 
-      {/* Raw Video Container */}
-      <div id="reader" className="w-full h-full"></div>
+      {/* Scanner Container with Flip Animation */}
+      <div className={`w-full h-full ${isFlipping ? 'flip-animate' : ''}`}>
+        <div id="reader" className="w-full h-full"></div>
+      </div>
 
-      {/* UPI-Style Bottom Hardware Dock */}
+      {/* Laser Overlay (Centered exactly over the 260x260 qrbox) */}
+      {!isFlipping && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px] z-20 pointer-events-none rounded-lg overflow-hidden">
+          <div className="laser"></div>
+        </div>
+      )}
+
+      {/* Zoom Slider */}
+      <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-lg">
+        <span className="text-white text-xs font-bold">1x</span>
+        <input 
+          type="range" min="1" max="5" step="0.1" value={zoom} onChange={handleZoom} 
+          className="w-32 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[#2563eb]" 
+        />
+        <span className="text-white text-xs font-bold">5x</span>
+      </div>
+
+      {/* Bottom Hardware Dock */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
-        
-        {/* Gallery */}
         <div className="flex flex-col items-center gap-2">
           <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           </button>
           <span className="text-white text-xs font-medium drop-shadow-md">Gallery</span>
           <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleGalleryUpload} />
         </div>
 
-        {/* Flash */}
         <div className="flex flex-col items-center gap-2">
           <button onClick={toggleFlash} className={`w-14 h-14 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg ${isFlashOn ? 'bg-white text-black' : 'bg-black/40 text-white hover:bg-white/10'}`}>
-            <svg className="w-6 h-6" fill={isFlashOn ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            <svg className="w-6 h-6" fill={isFlashOn ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </button>
           <span className="text-white text-xs font-medium drop-shadow-md">Flash</span>
         </div>
 
-        {/* Flip */}
         <div className="flex flex-col items-center gap-2">
           <button onClick={flipCamera} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           </button>
           <span className="text-white text-xs font-medium drop-shadow-md">Flip</span>
         </div>
-
       </div>
 
-      {/* Toast Notification */}
       {message && (
         <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-black/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 shadow-2xl animate-fade-in-up whitespace-nowrap">
           <p className="text-white font-medium text-sm tracking-wide">{message}</p>
