@@ -5,19 +5,29 @@ const Attendance = require('../models/Attendance');
 
 const router = express.Router();
 global.activeSessions = {}; 
+let lockedCampusIP = null; // Stores the faculty's network IP
+
+// Lock Network Route
+router.post('/lock-network', protect, instructorOnly, (req, res) => {
+  const rawIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  lockedCampusIP = rawIP.split(',')[0].trim();
+  res.json({ message: 'Network locked successfully', ip: lockedCampusIP });
+});
 
 // Start Session
 router.post('/start', protect, instructorOnly, (req, res) => {
-  const { classId } = req.body;
+  const { classId, qrDuration } = req.body;
   if (!classId) return res.status(400).json({ message: 'classId is required' });
 
+  // Use the custom duration sent from the frontend, or default to 30s
+  const durationMs = (qrDuration || 30) * 1000;
   const token = crypto.randomBytes(16).toString('hex');
-  const expiresAt = Date.now() + 30 * 1000; 
+  const expiresAt = Date.now() + durationMs; 
 
   global.activeSessions[classId] = { 
     currentToken: token, 
     expiresAt,
-    instructorIP: req.ip 
+    instructorIP: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress 
   };
 
   res.status(200).json({ message: 'Session started', token, expiresAt });
@@ -41,13 +51,14 @@ router.post('/mark', protect, async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired QR code' });
   }
 
-  // Same Wi-Fi Verification
-  const getSubnet = (ip) => ip.includes(':') ? ip.split(':').slice(0, -1).join(':') : ip.split('.').slice(0, 3).join('.');
-  const instructorSubnet = getSubnet(session.instructorIP);
-  const studentSubnet = getSubnet(req.ip);
-
-  if (instructorSubnet !== studentSubnet && req.ip !== '::1' && req.ip !== '127.0.0.1') {
-    return res.status(403).json({ message: 'Access Denied: Must be on campus Wi-Fi.' });
+  // Same Wi-Fi Verification using Render's proxy headers
+  if (lockedCampusIP) {
+    const studentRawIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const studentIP = studentRawIP.split(',')[0].trim();
+    
+    if (studentIP !== lockedCampusIP && studentIP !== '::1' && studentIP !== '127.0.0.1') {
+      return res.status(403).json({ message: 'Access Denied: You must be connected to the campus Wi-Fi to mark attendance.' });
+    }
   }
 
   try {
@@ -57,7 +68,7 @@ router.post('/mark', protect, async (req, res) => {
     const record = await Attendance.create({
       student: req.user._id,
       sessionToken: scannedToken,
-      ipAddress: req.ip
+      ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress
     });
 
     res.status(200).json({ message: 'Attendance marked successfully', record });
