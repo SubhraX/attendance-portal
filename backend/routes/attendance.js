@@ -40,7 +40,7 @@ router.post('/start', protect, instructorOnly, (req, res) => {
   res.status(200).json({ message: 'Session started', token, expiresAt });
 });
 
-// Mark Attendance
+// Mark Attendance (With Mercy Overwrite for Current Day)
 router.post('/mark', protect, async (req, res) => {
   const { classId, scannedToken } = req.body;
   
@@ -54,7 +54,7 @@ router.post('/mark', protect, async (req, res) => {
     return res.status(400).json({ message: 'No active attendance session for this class' });
   }
 
-  // Instantly block if they already scanned during this live session
+  // Instantly block if they already scanned during this exact live session instance
   const studentIdStr = req.user._id.toString();
   if (session.markedStudents.has(studentIdStr)) {
     return res.status(400).json({ message: 'Attendance already marked for this session' });
@@ -75,16 +75,36 @@ router.post('/mark', protect, async (req, res) => {
   }
 
   try {
-    const alreadyMarked = await Attendance.findOne({ student: req.user._id, sessionToken: scannedToken });
-    if (alreadyMarked) return res.status(400).json({ message: 'Attendance already marked' });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
-    const record = await Attendance.create({
+    // Look for an existing record for TODAY
+    let record = await Attendance.findOne({
       student: req.user._id,
-      sessionToken: scannedToken,
-      ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
 
-    // Add student to memory lock to instantly block subsequent scans
+    const studentIP = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress;
+
+    if (record) {
+      // Mercy Rule: Overwrite existing 'absent' or older record for today to 'present'
+      record.sessionToken = scannedToken;
+      record.status = 'present';
+      record.ipAddress = studentIP;
+      await record.save();
+    } else {
+      // Create new record
+      record = await Attendance.create({
+        student: req.user._id,
+        sessionToken: scannedToken,
+        status: 'present',
+        ipAddress: studentIP
+      });
+    }
+
+    // Add student to memory lock to instantly block subsequent scans in THIS session
     session.markedStudents.add(studentIdStr);
 
     // Broadcast to the faculty panel in real-time
@@ -146,17 +166,7 @@ router.get('/student/:id', protect, instructorOnly, async (req, res) => {
   }
 });
 
-// Get specific student's attendance for the calendar (Faculty Only)
-router.get('/student/:id', protect, instructorOnly, async (req, res) => {
-  try {
-    const records = await Attendance.find({ student: req.params.id }).sort({ createdAt: 1 });
-    res.status(200).json(records);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error fetching student attendance', error: error.message });
-  }
-});
-
-// Stop Session and Mark Absentees
+// Stop Session and Mark Absentees (Prevents duplicate daily absentees)
 router.post('/stop', protect, instructorOnly, async (req, res) => {
   const { classId } = req.body;
   const session = global.activeSessions[classId];
@@ -164,15 +174,25 @@ router.post('/stop', protect, instructorOnly, async (req, res) => {
   if (!session) return res.status(400).json({ message: 'No active session found.' });
 
   try {
-    // Get all registered students
     const User = require('../models/User');
     const allStudents = await User.find({ role: 'student' });
 
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Find who already has ANY record today (present or absent)
+    const todayRecords = await Attendance.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+    const todayStudentIds = new Set(todayRecords.map(r => r.student.toString()));
+
     const absentRecords = [];
     
-    // Check who is missing from the memory tracker
     allStudents.forEach(student => {
-      if (!session.markedStudents.has(student._id.toString())) {
+      // Only create an absent record if they didn't scan AND don't already have a record for today
+      if (!session.markedStudents.has(student._id.toString()) && !todayStudentIds.has(student._id.toString())) {
         absentRecords.push({
           student: student._id,
           sessionToken: 'MISSED',
@@ -181,14 +201,11 @@ router.post('/stop', protect, instructorOnly, async (req, res) => {
       }
     });
 
-    // Bulk insert absent records
     if (absentRecords.length > 0) {
       await Attendance.insertMany(absentRecords);
     }
 
-    // Destroy the live session
     delete global.activeSessions[classId];
-
     res.status(200).json({ message: 'Session stopped and absences recorded.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error stopping session', error: error.message });

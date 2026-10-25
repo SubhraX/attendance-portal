@@ -140,7 +140,6 @@ export default function FacultyRecords() {
   };
 
   const handleResetDevice = async (studentId) => {
-    if (!window.confirm(`Reset device lock for this student?`)) return;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/reset-device', {
@@ -149,7 +148,6 @@ export default function FacultyRecords() {
         body: JSON.stringify({ studentId })
       });
       if (res.ok) {
-        alert("Device unlocked successfully.");
         fetchStudents();
         setSelectedStudent({ ...selectedStudent, deviceId: null });
       }
