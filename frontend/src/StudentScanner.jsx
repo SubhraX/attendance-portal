@@ -8,8 +8,17 @@ export default function StudentScanner() {
   const [isMarked, setIsMarked] = useState(false);
   const navigate = useNavigate();
 
+  // Auto-redirect effect
   useEffect(() => {
-    if (isMarked) return; // Prevent scanner from mounting if already marked
+    if (isMarked) {
+      const timer = setTimeout(() => navigate('/'), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isMarked, navigate]);
+
+  // Scanner effect
+  useEffect(() => {
+    if (isMarked) return; 
 
     const scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false);
 
@@ -27,10 +36,8 @@ export default function StudentScanner() {
 
         const data = await res.json();
         if (res.ok) {
-          setMessage('✅ Your attendance is marked!');
-          setStatusColor('text-emerald-400');
-          setIsMarked(true); // Triggers the UI change
-          scanner.clear(); // Stops and removes the camera
+          setIsMarked(true); 
+          scanner.clear(); 
         } else {
           setMessage(`❌ ${data.message}`);
           setStatusColor('text-red-400');
@@ -48,6 +55,24 @@ export default function StudentScanner() {
     };
   }, [isMarked]);
 
+  // Minimal Glowing Success Screen
+  if (isMarked) {
+    return (
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-all duration-500">
+        <div className="flex flex-col items-center animate-fade-in-up">
+          <div className="w-28 h-28 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+            <svg className="w-16 h-16 text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,1)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2 tracking-widest uppercase">Verified</h2>
+          <p className="text-gray-400 text-sm animate-pulse">Redirecting to home...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Standard Scanner UI
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center pt-12">
       <style>{`
@@ -64,27 +89,12 @@ export default function StudentScanner() {
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl animate-fade-in-up">
         <h2 className="text-2xl font-bold mb-6 text-center text-emerald-400">Scanner Portal</h2>
 
-        {!isMarked ? (
-          <div id="reader" className="w-full mb-6 rounded-xl bg-slate-950 p-2 flex flex-col items-center"></div>
-        ) : (
-          <div className="flex flex-col items-center justify-center p-8 bg-slate-950 rounded-xl mb-6 border border-emerald-900/50">
-            <svg className="w-24 h-24 text-emerald-500 mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <h3 className="text-xl font-bold text-white mb-2">Success</h3>
-          </div>
-        )}
+        <div id="reader" className="w-full mb-6 rounded-xl bg-slate-950 p-2 flex flex-col items-center"></div>
 
         {message && (
           <div className={`p-4 text-center text-lg font-bold bg-slate-950 border border-slate-800 rounded-lg ${statusColor} animate-fade-in-up`}>
             {message}
           </div>
-        )}
-
-        {isMarked && (
-          <button onClick={() => navigate('/')} className="w-full mt-6 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-all">
-            Logout / Return Home
-          </button>
         )}
       </div>
     </div>
