@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { protect, instructorOnly } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({ message: 'Account is securely locked to another device.' });
       }
       
-      // FIX: Use updateOne instead of user.save() to bypass the pre-save password hook
+      // Use updateOne instead of user.save() to bypass the pre-save password hook
       if (!user.deviceId && deviceId) {
         await User.updateOne({ _id: user._id }, { $set: { deviceId: deviceId } });
       }
@@ -53,6 +54,19 @@ router.post('/login', async (req, res) => {
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
     console.error("Login Error:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Reset Student Device ID (Faculty Only)
+router.post('/reset-device', protect, instructorOnly, async (req, res) => {
+  try {
+    const { studentId } = req.body;
+    if (!studentId) return res.status(400).json({ message: 'Student ID is required' });
+
+    await User.updateOne({ _id: studentId }, { $set: { deviceId: null } });
+    res.status(200).json({ message: 'Device lock removed successfully. The student can now log in on a new device.' });
+  } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
