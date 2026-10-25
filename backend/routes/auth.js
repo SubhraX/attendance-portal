@@ -36,10 +36,10 @@ router.post('/login', async (req, res) => {
       if (user.deviceId && user.deviceId !== deviceId) {
         return res.status(403).json({ message: 'Account is securely locked to another device.' });
       }
-      // Lock the account to this device on their very first successful login
+      
+      // FIX: Use updateOne instead of user.save() to bypass the pre-save password hook
       if (!user.deviceId && deviceId) {
-        user.deviceId = deviceId;
-        await user.save();
+        await User.updateOne({ _id: user._id }, { $set: { deviceId: deviceId } });
       }
     }
 
@@ -52,6 +52,7 @@ router.post('/login', async (req, res) => {
 
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
+    console.error("Login Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
