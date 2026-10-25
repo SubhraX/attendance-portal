@@ -71,4 +71,31 @@ router.post('/reset-device', protect, instructorOnly, async (req, res) => {
   }
 });
 
+// Get all Students (Faculty Only)
+router.get('/students', protect, instructorOnly, async (req, res) => {
+  try {
+    // Only fetch users with the 'student' role, exclude passwords
+    const students = await User.find({ role: 'student' }).select('-password');
+    res.status(200).json(students);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching students', error: error.message });
+  }
+});
+
+// Remove a Student (Faculty Only)
+router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    await User.findByIdAndDelete(studentId);
+    
+    // Also cascade delete all their attendance records
+    const Attendance = require('../models/Attendance');
+    await Attendance.deleteMany({ student: studentId });
+    
+    res.status(200).json({ message: 'Student and their attendance records removed successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error removing student', error: error.message });
+  }
+});
+
 module.exports = router;

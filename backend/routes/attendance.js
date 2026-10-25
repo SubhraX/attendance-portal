@@ -136,4 +136,14 @@ router.get('/history', protect, instructorOnly, async (req, res) => {
   }
 });
 
+// Get specific student's attendance for the calendar (Faculty Only)
+router.get('/student/:id', protect, instructorOnly, async (req, res) => {
+  try {
+    const records = await Attendance.find({ student: req.params.id }).sort({ createdAt: 1 });
+    res.status(200).json(records);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching student attendance', error: error.message });
+  }
+});
+
 module.exports = router;
