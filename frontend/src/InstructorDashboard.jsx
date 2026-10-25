@@ -23,7 +23,7 @@ export default function InstructorDashboard() {
     
     if(res.ok) {
       setIsSessionActive(true);
-      setAttendedStudents([]); // Clear previous session data
+      setAttendedStudents([]); 
       
       const socket = new WebSocket('wss://attendance-portal-p2lp.onrender.com');
       socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId: classId.trim(), duration: qrDuration }));
@@ -33,7 +33,6 @@ export default function InstructorDashboard() {
           setToken(data.token);
           setTimeLeft(qrDuration); 
         } else if (data.type === 'STUDENT_MARKED') {
-          // Listens for real-time student scans from the backend
           setAttendedStudents(prev => [...prev, data.student]);
         }
       };
@@ -46,7 +45,6 @@ export default function InstructorDashboard() {
     setIsSessionActive(false);
     setToken(null);
     setTimeLeft(0);
-    // Note: You may want to add a backend fetch call here to formally close the session in the DB
   };
 
   const toggleNetworkLock = async () => {
@@ -97,14 +95,14 @@ export default function InstructorDashboard() {
         </h2>
         <div className="flex flex-col gap-3">
           <button 
-            onClick={() => { setActiveTab('generate'); stopSession(); }} 
+            onClick={() => setActiveTab('generate')} 
             className={`px-4 py-3 rounded-xl font-semibold text-left transition-all duration-300 flex items-center gap-3 ${activeTab === 'generate' ? 'bg-[#2563eb] text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'text-gray-400 hover:bg-[#1a2332] hover:text-gray-200'}`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
             Generate QR
           </button>
           <button 
-            onClick={() => { setActiveTab('records'); stopSession(); }} 
+            onClick={() => setActiveTab('records')} 
             className={`px-4 py-3 rounded-xl font-semibold text-left transition-all duration-300 flex items-center gap-3 ${activeTab === 'records' ? 'bg-[#2563eb] text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'text-gray-400 hover:bg-[#1a2332] hover:text-gray-200'}`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -118,61 +116,60 @@ export default function InstructorDashboard() {
         {activeTab === 'generate' ? (
           <div className={`w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 ${isSessionActive ? 'items-stretch' : 'items-center justify-center h-full'}`}>
             
-            {/* Left Column: Controls or QR Display */}
-            <div className={`flex-1 flex flex-col ${!isSessionActive ? 'max-w-4xl w-full' : 'items-center justify-center'}`}>
+            <div className={`flex-1 flex flex-col ${!isSessionActive ? 'max-w-md w-full' : 'items-center justify-center'}`}>
               
               {!isSessionActive ? (
-                /* Controls Card (Hidden during active session) */
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-8 bg-[#151b2b] rounded-2xl border border-[#1e293b] shadow-lg transition-all animate-fade-in-up w-full">
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-[#5c98ff] mb-2 tracking-wide">Session Dashboard</h2>
-                    <div className="flex items-center gap-2 mb-6">
-                      <span className="text-gray-400 text-sm">Target Class:</span>
-                      <input 
-                        type="text" 
-                        value={classId} 
-                        onChange={(e) => setClassId(e.target.value.toUpperCase())} 
-                        className="bg-transparent border-b border-gray-600 text-white font-mono focus:outline-none focus:border-[#5c98ff] w-24 text-sm px-1 transition-colors" 
-                        placeholder="E.g. CS101"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center gap-4 bg-[#0b0f19] px-4 py-3 rounded-xl border border-[#1e293b] w-max">
-                      <label className="text-sm font-semibold text-gray-300">QR Refresh (Seconds):</label>
-                      <input 
-                        type="number" 
-                        min="5" 
-                        max="300" 
-                        value={qrDuration} 
-                        onChange={(e) => setQrDuration(Number(e.target.value))} 
-                        className="w-16 bg-[#1a2332] text-white border border-[#2a3a54] p-1.5 rounded-lg text-center font-mono text-sm focus:outline-none focus:border-[#5c98ff] transition-all" 
-                      />
-                    </div>
+                /* Vertical List Controls Card */
+                <div className="flex flex-col p-8 bg-[#151b2b] rounded-2xl border border-[#1e293b] shadow-lg animate-fade-in-up w-full gap-6">
+                  <h2 className="text-2xl font-bold text-[#5c98ff] tracking-wide border-b border-[#1e293b] pb-4">Session Dashboard</h2>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-gray-400 text-sm font-semibold uppercase tracking-wider">Target Class</label>
+                    <input 
+                      type="text" 
+                      value={classId} 
+                      onChange={(e) => setClassId(e.target.value.toUpperCase())} 
+                      className="bg-[#0b0f19] border border-[#1e293b] rounded-xl text-white font-mono focus:outline-none focus:border-[#5c98ff] px-4 py-3 transition-colors w-full" 
+                      placeholder="E.g. CS101"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-gray-400 text-sm font-semibold uppercase tracking-wider">QR Refresh (Seconds)</label>
+                    <input 
+                      type="number" 
+                      min="5" 
+                      max="300" 
+                      value={qrDuration} 
+                      onChange={(e) => setQrDuration(Number(e.target.value))} 
+                      className="bg-[#0b0f19] border border-[#1e293b] rounded-xl text-white font-mono focus:outline-none focus:border-[#5c98ff] px-4 py-3 transition-colors w-full" 
+                    />
                   </div>
 
-                  <div className="flex flex-col gap-4 mt-6 md:mt-0 items-end min-w-[240px]">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-gray-400 text-sm font-semibold uppercase tracking-wider">Security</label>
                     <div 
                       onClick={toggleNetworkLock}
-                      className="flex items-center gap-3 bg-[#0b0f19] border border-[#1e293b] px-4 py-2.5 rounded-xl cursor-pointer hover:border-gray-600 transition-colors w-full justify-between group"
+                      className="flex items-center justify-between bg-[#0b0f19] border border-[#1e293b] px-4 py-3.5 rounded-xl cursor-pointer hover:border-gray-600 transition-colors w-full group"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{isNetworkLocked ? '🔒' : '🔓'}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{isNetworkLocked ? '🔒' : '🔓'}</span>
                         <span className={`text-sm font-medium transition-colors ${isNetworkLocked ? 'text-emerald-400' : 'text-gray-400 group-hover:text-gray-300'}`}>
-                          {isNetworkLocked ? 'Locked to Campus Wi-Fi' : 'Unlocked (Click to Lock)'}
+                          {isNetworkLocked ? 'Locked to Campus Wi-Fi' : 'Unlocked'}
                         </span>
                       </div>
                       <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isNetworkLocked ? 'bg-emerald-500' : 'bg-gray-600'}`}>
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isNetworkLocked ? 'translate-x-4' : 'translate-x-1'}`} />
                       </div>
                     </div>
-
-                    <button 
-                      onClick={startSession} 
-                      className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all w-full active:scale-95"
-                    >
-                      Start Live Session
-                    </button>
                   </div>
+
+                  <button 
+                    onClick={startSession} 
+                    className="mt-4 bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-6 py-4 rounded-xl font-bold shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all w-full active:scale-95 text-lg"
+                  >
+                    Start Live Session
+                  </button>
                 </div>
               ) : (
                 /* Active QR Projection */
