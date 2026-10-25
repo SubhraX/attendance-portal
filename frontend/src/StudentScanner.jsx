@@ -188,7 +188,7 @@ export default function StudentScanner() {
 
       {/* Global Styles */}
       <style>{`
-        #reader { width: 100% !important; height: 100vh !important; background: black; position: relative; overflow: hidden; }
+        #reader { width: 100% !important; height: 100% !important; background: black; position: relative; overflow: hidden; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; transform: ${facingMode === 'user' ? 'scaleX(-1)' : 'none'} !important; }
         #qr-shaded-region { border-color: rgba(0, 0, 0, 0.7) !important; z-index: 10 !important; }
         
@@ -200,8 +200,8 @@ export default function StudentScanner() {
         }
       `}</style>
 
-      {/* Scanner Container with Flip Animation */}
-      <div className={`w-full h-full ${isFlipping ? 'flip-animate' : ''}`}>
+      {/* Scanner Container (Extended height & shifted up to center the scanning box visually above controls) */}
+      <div className={`absolute left-0 w-full h-[125vh] -top-[15vh] ${isFlipping ? 'flip-animate' : ''}`}>
         <div id="reader" className="w-full h-full flex items-center justify-center"></div>
       </div>
 
