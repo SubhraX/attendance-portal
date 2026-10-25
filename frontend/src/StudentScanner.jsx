@@ -76,7 +76,7 @@ export default function StudentScanner() {
         () => {} 
       );
       setIsFlashOn(false);
-      setZoom(1); // Reset zoom on camera switch
+      setZoom(1); 
     } catch (err) {
       console.error("Camera error:", err);
       setMessage("Camera access denied or unavailable.");
@@ -142,7 +142,7 @@ export default function StudentScanner() {
         advanced: [{ zoom: newZoom }]
       });
     } catch (error) {
-      // Zoom not supported by hardware/browser, fail silently like native apps
+      // Zoom not supported silently fails
     }
   };
 
@@ -155,7 +155,7 @@ export default function StudentScanner() {
       await startCamera(newMode);
       setMessage('');
       setIsFlipping(false);
-    }, 300); // Swap camera halfway through the animation
+    }, 300); 
   };
 
   if (isMarked) {
@@ -186,7 +186,7 @@ export default function StudentScanner() {
         <div className="w-11"></div> 
       </div>
 
-      {/* Global Styles for Animations and Scanner Overrides */}
+      {/* Global Styles */}
       <style>{`
         #reader { width: 100% !important; height: 100vh !important; background: black; position: relative; overflow: hidden; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; transform: ${facingMode === 'user' ? 'scaleX(-1)' : 'none'} !important; }
@@ -198,34 +198,12 @@ export default function StudentScanner() {
           50% { transform: perspective(800px) rotateY(90deg) scale(0.8); opacity: 0.2; }
           100% { transform: perspective(800px) rotateY(0deg) scale(1); opacity: 1; }
         }
-
-        .laser {
-          position: absolute;
-          width: 100%;
-          height: 2px;
-          background: #34d399; /* emerald-400 */
-          box-shadow: 0 0 15px 3px rgba(52, 211, 153, 0.6);
-          animation: scan 2.5s infinite linear;
-        }
-        @keyframes scan {
-          0% { top: 0%; opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
       `}</style>
 
       {/* Scanner Container with Flip Animation */}
       <div className={`w-full h-full ${isFlipping ? 'flip-animate' : ''}`}>
-        <div id="reader" className="w-full h-full"></div>
+        <div id="reader" className="w-full h-full flex items-center justify-center"></div>
       </div>
-
-      {/* Laser Overlay (Centered exactly over the 260x260 qrbox) */}
-      {!isFlipping && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px] z-20 pointer-events-none rounded-lg overflow-hidden">
-          <div className="laser"></div>
-        </div>
-      )}
 
       {/* Zoom Slider */}
       <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-lg">
