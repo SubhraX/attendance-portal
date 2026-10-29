@@ -59,7 +59,7 @@ export default function Login() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url('/BITS.png')` }} // Updated background image
+      style={{ backgroundImage: `url('/BITS.png')` }}
     >
       <div className="absolute inset-0 bg-black/20"></div>
 
@@ -70,15 +70,16 @@ export default function Login() {
         <div className="w-full lg:w-[55%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-200/50">
           
           {/* Logo and Heading Container */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 text-center sm:text-left">
+          <div className="flex flex-col xl:flex-row items-center xl:items-start gap-6 mb-8 text-center xl:text-left">
             <img 
               src="/BITS_logo.png" 
               alt="BITS Mesra Logo" 
               className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-md shrink-0"
             />
             <div className="flex flex-col justify-center pt-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-orange-950 mb-1 drop-shadow-sm uppercase tracking-wide leading-tight">
-                Birla Institute of<br/>Technology, Mesra
+              {/* Removed <br/> and adjusted sizing to ensure it wraps cleanly */}
+              <h1 className="text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-extrabold text-orange-950 mb-1 drop-shadow-sm uppercase tracking-wide leading-tight">
+                Birla Institute of Technology, Mesra
               </h1>
               <h2 className="text-lg sm:text-xl font-bold text-orange-700">University ERP System</h2>
             </div>
