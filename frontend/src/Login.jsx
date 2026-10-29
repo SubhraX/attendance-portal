@@ -54,7 +54,7 @@ export default function Login() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url('/Bits messera.jpg')` }}
+      style={{ backgroundImage: `url('/BITS.jpg')` }}
     >
       {/* Very light dark overlay to make the cream glass pop without blurring the background */}
       <div className="absolute inset-0 bg-black/30"></div>
