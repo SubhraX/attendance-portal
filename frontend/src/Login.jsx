@@ -54,7 +54,7 @@ export default function Login() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url('/BITS.jpg')` }}
+      style={{ backgroundImage: `url('/BITS.png')` }}
     >
       {/* Very light dark overlay to maintain text contrast */}
       <div className="absolute inset-0 bg-black/30"></div>
