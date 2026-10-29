@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
@@ -8,6 +8,11 @@ export default function Login() {
   const [status, setStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Set the document title dynamically when the component mounts
+  useEffect(() => {
+    document.title = "ERP Login - BITS Mesra";
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -54,20 +59,30 @@ export default function Login() {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url('/BITS.png')` }}
+      style={{ backgroundImage: `url('/BITS.png')` }} // Updated background image
     >
-      {/* Very light dark overlay to maintain text contrast */}
-      <div className="absolute inset-0 bg-black/30"></div>
+      <div className="absolute inset-0 bg-black/20"></div>
 
-      {/* Main Glass Container - Increased transparency (lowered opacity from 85 to 60) */}
+      {/* Main Glass Container */}
       <div className="relative z-10 w-full max-w-6xl flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md bg-[#fffaf0]/60 border border-orange-100/50">
         
         {/* Left Side - Vision & Mission Panel */}
         <div className="w-full lg:w-[55%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-200/50">
-          <h1 className="text-3xl lg:text-4xl font-extrabold text-orange-950 mb-2 drop-shadow-sm uppercase tracking-wide">
-            Birla Institute of Technology, Mesra
-          </h1>
-          <h2 className="text-xl font-bold text-orange-700 mb-8">University ERP System</h2>
+          
+          {/* Logo and Heading Container */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 text-center sm:text-left">
+            <img 
+              src="/BITS_logo.png" 
+              alt="BITS Mesra Logo" 
+              className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-md shrink-0"
+            />
+            <div className="flex flex-col justify-center pt-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-orange-950 mb-1 drop-shadow-sm uppercase tracking-wide leading-tight">
+                Birla Institute of<br/>Technology, Mesra
+              </h1>
+              <h2 className="text-lg sm:text-xl font-bold text-orange-700">University ERP System</h2>
+            </div>
+          </div>
           
           <div className="mb-6">
             <h3 className="text-lg font-bold text-orange-900 mb-2 border-b border-orange-300 pb-1 inline-block">Institute Vision</h3>
@@ -86,7 +101,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right Side - Interactive Login/Role Selection (lowered from white/40 to white/10) */}
+        {/* Right Side - Interactive Login/Role Selection */}
         <div className="w-full lg:w-[45%] p-8 lg:p-12 flex flex-col justify-center bg-white/10">
           
           {!role ? (
