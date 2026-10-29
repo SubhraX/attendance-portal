@@ -14,10 +14,8 @@ export default function Login() {
     setIsLoading(true);
     setStatus('');
 
-    // DEVICE LOCK LOGIC: Generate or retrieve permanent device ID
     let deviceId = localStorage.getItem('deviceId');
     if (!deviceId) {
-      // Fallback for older browsers if crypto.randomUUID is not available
       deviceId = window.crypto?.randomUUID 
         ? window.crypto.randomUUID() 
         : `device-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
@@ -28,7 +26,7 @@ export default function Login() {
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, deviceId }) // Included deviceId
+        body: JSON.stringify({ email, password, deviceId })
       });
       const data = await res.json();
 
@@ -53,44 +51,60 @@ export default function Login() {
     }
   };
 
+  // Shared background styling wrapper
+  const BackgroundWrapper = ({ children }) => (
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url('/Bits messera.jpg')` }}
+    >
+      {/* Heavy blur overlay to ensure content readability */}
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
+      
+      {/* Content container */}
+      <div className="relative z-10 w-full flex flex-col items-center justify-center">
+        {children}
+      </div>
+    </div>
+  );
+
   if (!role) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+      <BackgroundWrapper>
         <div className="max-w-3xl w-full text-center mb-12 animate-fade-in-up">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">University ERP</h1>
-          <p className="text-slate-400 text-lg">Secure Attendance Management System</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg">University ERP</h1>
+          <p className="text-slate-300 text-lg font-medium drop-shadow-md">Secure Attendance Management System</p>
         </div>
         <div className="grid md:grid-cols-2 gap-6 w-full max-w-3xl animate-fade-in-up">
-          <button onClick={() => setRole('instructor')} className="group relative bg-slate-900 border border-slate-800 p-8 rounded-2xl hover:border-blue-500 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-300 text-left overflow-hidden">
+          <button onClick={() => setRole('instructor')} className="group relative bg-slate-900/90 border border-slate-700/50 p-8 rounded-2xl hover:border-blue-500 hover:bg-slate-900 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300 text-left overflow-hidden backdrop-blur-xl">
             <div className="relative z-10">
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400">Faculty Portal</h2>
               <p className="text-slate-400">Manage sessions and project QR codes.</p>
             </div>
           </button>
-          <button onClick={() => setRole('student')} className="group relative bg-slate-900 border border-slate-800 p-8 rounded-2xl hover:border-emerald-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 text-left overflow-hidden">
+          <button onClick={() => setRole('student')} className="group relative bg-slate-900/90 border border-slate-700/50 p-8 rounded-2xl hover:border-emerald-500 hover:bg-slate-900 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] transition-all duration-300 text-left overflow-hidden backdrop-blur-xl">
             <div className="relative z-10">
               <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-emerald-400">Student Portal</h2>
               <p className="text-slate-400">Scan active sessions and register attendance.</p>
             </div>
           </button>
         </div>
-      </div>
+      </BackgroundWrapper>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full shadow-2xl animate-fade-in-up">
-        <button onClick={() => { setRole(null); setStatus(''); }} className="text-slate-500 hover:text-white mb-6">&larr; Back to roles</button>
+    <BackgroundWrapper>
+      <div className="bg-slate-900/95 border border-slate-700/50 p-8 rounded-2xl max-w-md w-full shadow-2xl animate-fade-in-up backdrop-blur-xl">
+        <button onClick={() => { setRole(null); setStatus(''); }} className="text-slate-400 hover:text-white mb-6 transition-colors font-medium">&larr; Back to roles</button>
         <h2 className="text-3xl font-bold text-white mb-2">{role === 'instructor' ? 'Faculty Login' : 'Student Login'}</h2>
         <form onSubmit={handleLogin} className="flex flex-col gap-5 mt-6">
-          <input type="email" placeholder="Email Address" className="bg-slate-950 border border-slate-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500" onChange={e => setEmail(e.target.value)} required />
-          <input type="password" placeholder="Password" className="bg-slate-950 border border-slate-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500" onChange={e => setPassword(e.target.value)} required />
+          <input type="email" placeholder="Email Address" className="bg-slate-950/80 border border-slate-700/50 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password" className="bg-slate-950/80 border border-slate-700/50 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" onChange={e => setPassword(e.target.value)} required />
           <button 
             type="submit" 
             disabled={isLoading}
-            className={`flex justify-center items-center text-white font-bold py-3 rounded-lg transition-all ${
-              role === 'instructor' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-emerald-600 hover:bg-emerald-500'
+            className={`flex justify-center items-center text-white font-bold py-3 rounded-lg transition-all shadow-lg ${
+              role === 'instructor' ? 'bg-blue-600 hover:bg-blue-500 hover:shadow-blue-500/25' : 'bg-emerald-600 hover:bg-emerald-500 hover:shadow-emerald-500/25'
             } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isLoading ? (
@@ -106,8 +120,8 @@ export default function Login() {
             )}
           </button>
         </form>
-        {status && <div className="mt-6 p-3 bg-red-900/30 border border-red-800 text-red-400 rounded-lg text-sm text-center">{status}</div>}
+        {status && <div className="mt-6 p-3 bg-red-900/30 border border-red-800/50 text-red-400 rounded-lg text-sm text-center font-medium">{status}</div>}
       </div>
-    </div>
+    </BackgroundWrapper>
   );
 }
