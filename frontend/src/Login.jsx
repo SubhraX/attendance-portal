@@ -70,16 +70,15 @@ export default function Login() {
         <div className="w-full lg:w-[55%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-200/50">
           
           {/* Logo and Heading Container */}
-          <div className="flex flex-col xl:flex-row items-center xl:items-start gap-6 mb-8 text-center xl:text-left">
+          <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-8 text-center xl:text-left">
             <img 
               src="/BITS_logo.png" 
               alt="BITS Mesra Logo" 
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-md shrink-0"
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-md shrink-0"
             />
             <div className="flex flex-col justify-center pt-1">
-              {/* Removed <br/> and adjusted sizing to ensure it wraps cleanly */}
-              <h1 className="text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-extrabold text-orange-950 mb-1 drop-shadow-sm uppercase tracking-wide leading-tight">
-                Birla Institute of Technology, Mesra
+              <h1 className="text-2xl sm:text-3xl lg:text-[1.75rem] xl:text-3xl font-extrabold text-orange-950 mb-1 drop-shadow-sm uppercase tracking-wide leading-tight">
+                Birla Institute of <span className="inline-block whitespace-nowrap">Technology, Mesra</span>
               </h1>
               <h2 className="text-lg sm:text-xl font-bold text-orange-700">University ERP System</h2>
             </div>
