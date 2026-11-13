@@ -324,11 +324,20 @@ export default function FacultyRecords() {
                   {selectedStudent.name.charAt(0).toUpperCase()}
                 </div>
                 {isEditing ? (
-                  <form onSubmit={handleEditSubmit} className="flex flex-col gap-2 w-full">
-                    <input type="text" required value={editForm.name} onChange={e=>setEditForm({...editForm, name: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-1.5 text-sm" />
-                    <input type="email" required value={editForm.email} onChange={e=>setEditForm({...editForm, email: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-1.5 text-sm" />
-                    <input type="password" placeholder="New password (optional)" value={editForm.password} onChange={e=>setEditForm({...editForm, password: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-1.5 text-sm" />
-                    <button type="submit" className="bg-[#2563eb] text-white text-xs font-bold py-1.5 rounded-lg">Save Changes</button>
+                  <form onSubmit={handleEditSubmit} className="flex flex-col gap-3 w-full pr-2">
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Student Name</label>
+                      <input type="text" required value={editForm.name} onChange={e=>setEditForm({...editForm, name: e.target.value})} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Email Address</label>
+                      <input type="email" required value={editForm.email} onChange={e=>setEditForm({...editForm, email: e.target.value})} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Reset Password</label>
+                      <input type="text" placeholder="Leave blank to keep current password..." value={editForm.password} onChange={e=>setEditForm({...editForm, password: e.target.value})} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm placeholder-gray-600 focus:border-red-500 focus:outline-none" />
+                    </div>
+                    <button type="submit" className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold py-2.5 rounded-lg transition-colors mt-2 shadow-lg">Save Changes</button>
                   </form>
                 ) : (
                   <div>
