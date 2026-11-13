@@ -14,7 +14,7 @@ export default function Login() {
 
   // Handle dynamic title and initial splash screen timing
   useEffect(() => {
-    document.title = "ERP Login - BITS Mesra";
+    document.title = "ERP Login - BIT Mesra";
     
     // Start fade out after 1.2s, completely remove from DOM after 1.7s
     const fadeTimer = setTimeout(() => setIsFading(true), 1200);
