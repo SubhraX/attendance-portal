@@ -80,34 +80,32 @@ export default function StudentScanner() {
       scannerRef.current = new Html5Qrcode("reader");
     }
 
-    try {
-      if (scannerRef.current.isScanning) {
-        await scannerRef.current.stop();
-        scannerRef.current.clear(); // Ensure the old video element is destroyed
-      }
-    } catch (e) {
-      console.warn("Cleanup error:", e);
+    if (scannerRef.current.isScanning) {
+      await scannerRef.current.stop();
     }
 
     try {
-      // FIX: In html5-qrcode, advanced constraints go in the FIRST argument
-      const mediaConstraints = {
-        facingMode: mode,
-        width: { ideal: 1280, min: 640 },
-        height: { ideal: 720, min: 480 }
-      };
-
       await scannerRef.current.start(
-        mediaConstraints,
-        { fps: 15, qrbox: { width: 260, height: 260 } }, // Config goes in the second
+        { facingMode: mode },
+        { 
+          fps: 15, // 15 is the sweet spot; 20+ can cause thermal throttling on older phones
+          qrbox: { width: 260, height: 260 }, 
+          // REMOVED aspectRatio: 1.0 (Let the phone use its native sensor ratio)
+          // Use native videoConstraints for high-res auto-focusing
+          videoConstraints: {
+            facingMode: mode,
+            width: { ideal: 1920, min: 640 },
+            height: { ideal: 1080, min: 480 }
+          }
+        },
         onScanSuccess,
-        () => {} 
+        () => {} // Ignore continuous frame errors
       );
       setIsFlashOn(false);
       setZoom(1); 
     } catch (err) {
-      console.error("Camera error, trying fallback:", err);
-      // Fallback for older devices that reject specific resolution constraints
+      console.error("HD Camera error, falling back:", err);
+      // Safe Fallback: If a very old device rejects the HD request, drop constraints
       try {
         await scannerRef.current.start(
           { facingMode: mode },
@@ -145,39 +143,36 @@ export default function StudentScanner() {
   const handleGalleryUpload = async (e) => {
     if (e.target.files.length === 0) return;
     const file = e.target.files[0];
-    setMessage('Scanning image...');
+    setMessage('Processing image...');
 
     try {
-      // Ensure the scanner instance is ready
-      if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode("reader");
-      }
-
-      // Stop live scanning if it's running before checking the file
-      if (scannerRef.current.isScanning) {
+      // 1. Stop the live camera so the decoder can dedicate all resources to the file
+      if (scannerRef.current && scannerRef.current.isScanning) {
         await scannerRef.current.stop();
       }
 
-      // Pass true for the second argument (showImage) to help with debugging
-      // The library's scanFile method is often more successful when it's not fighting live video
-      const decodedText = await scannerRef.current.scanFile(file, true);
+      // 2. Scan file. Pass 'false' to prevent the library from breaking your video UI DOM
+      const decodedText = await scannerRef.current.scanFile(file, false);
       
       if (decodedText) {
          onScanSuccess(decodedText);
       }
     } catch (err) {
-      console.error("Gallery scan failed:", err);
+      console.warn("Gallery scan failed:", err);
       setMessage('❌ No valid QR code found in image');
+      
+      // 3. CRITICAL: Gracefully restart the camera feed if the image scan fails
       setTimeout(() => {
         setMessage('');
-        // Resume the camera if the gallery scan failed
         if (!isMarked) {
           startCamera(facingMode);
         }
       }, 2000);
     }
-    e.target.value = ''; // Reset input so the same file can be selected again if needed
-  };v
+    
+    // Reset the input so the user can select the same file again if they want to retry
+    e.target.value = ''; 
+  };
 
   const toggleFlash = async () => {
     if (!scannerRef.current || !scannerRef.current.isScanning) return;
