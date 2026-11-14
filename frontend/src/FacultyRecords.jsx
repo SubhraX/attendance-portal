@@ -217,28 +217,66 @@ export default function FacultyRecords() {
     setCalMonth(parseInt(availableMonths[newIndex].split('-')[1]) - 1);
   };
 
+  const handleDayClick = async (day) => {
+    if (!selectedStudent) return;
+    
+    const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const currentStatus = attendanceData[dateString];
+    
+    // Toggle logic: Unmarked -> Present -> Absent -> Present
+    const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+    
+    // Optimistic UI update for instant visual feedback
+    setAttendanceData(prev => ({
+      ...prev,
+      [dateString]: newStatus
+    }));
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${selectedStudent._id}/manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ date: dateString, status: newStatus })
+      });
+      
+      if (!res.ok) {
+        showToast("Failed to update date manually.");
+        // Revert UI on failure
+        setAttendanceData(prev => ({ ...prev, [dateString]: currentStatus }));
+      }
+    } catch (error) {
+      showToast("Error updating record.");
+      setAttendanceData(prev => ({ ...prev, [dateString]: currentStatus }));
+    }
+  };
+
   const renderCalendar = () => {
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const firstDay = new Date(calYear, calMonth, 1).getDay();
-
+    
     const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10"></div>);
     }
-
+    
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
-
-      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500';
+      
+      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500 hover:border-[#5c98ff] hover:text-white cursor-pointer'; 
       if (status === 'present') {
-        styleClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]';
+        styleClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)] hover:bg-emerald-500/30 cursor-pointer';
       } else if (status === 'absent') {
-        styleClass = 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]';
+        styleClass = 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)] hover:bg-red-500/30 cursor-pointer';
       }
 
       days.push(
-        <div key={day} className={`h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all ${styleClass}`}>
+        <div 
+          key={day} 
+          onClick={() => handleDayClick(day)}
+          className={`h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all ${styleClass}`}
+        >
           {day}
         </div>
       );

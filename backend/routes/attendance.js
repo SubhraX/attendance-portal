@@ -222,4 +222,40 @@ router.delete('/student/:id/records', protect, instructorOnly, async (req, res) 
   }
 });
 
+// Manual override for a specific day's attendance (Faculty Only)
+router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => {
+  try {
+    const { date, status } = req.body;
+    if (!date || !status) return res.status(400).json({ message: 'Date and status required' });
+
+    const targetDate = new Date(date);
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+    let record = await Attendance.findOne({
+      student: req.params.id,
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (record) {
+      record.status = status;
+      record.sessionToken = 'MANUAL_OVERRIDE';
+      await record.save();
+    } else {
+      // Set to midday to avoid edge-case timezone shifting
+      const midDay = new Date(date + 'T12:00:00Z');
+      record = await Attendance.create({
+        student: req.params.id,
+        sessionToken: 'MANUAL_OVERRIDE',
+        status: status,
+        ipAddress: 'MANUAL_OVERRIDE',
+        createdAt: midDay
+      });
+    }
+    res.status(200).json({ message: 'Attendance updated manually', record });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
