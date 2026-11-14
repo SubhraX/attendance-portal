@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -9,11 +9,14 @@ export default function StudentScanner() {
   const [isFlashOn, setIsFlashOn] = useState(false);
   const [facingMode, setFacingMode] = useState('environment'); 
   const [isCapturing, setIsCapturing] = useState(false);
-  const [zoom, setZoom] = useState(1);
   
   const fileInputRef = useRef(null);
   const isProcessingRef = useRef(false); 
   const navigate = useNavigate();
+
+  // Pinch-to-Zoom Refs
+  const initialTouchDist = useRef(null);
+  const currentZoom = useRef(1);
 
   useEffect(() => {
     if (isMarked) {
@@ -87,31 +90,58 @@ export default function StudentScanner() {
       
       if (decodedText) {
          setMessage('');
-         html5QrCode.clear(); // Clear memory to prevent scanner lockup on subsequent uploads
          processQRData(decodedText);
       }
     } catch (err) {
       setMessage('❌ No valid QR code found in image');
-      setTimeout(() => setMessage(''), 2000);
+      setTimeout(() => {
+        setMessage('');
+        isProcessingRef.current = false; // CRITICAL FIX: Unlocks the scanner after a failed gallery upload
+      }, 2000);
     }
     e.target.value = ''; 
   };
 
-  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting to stop flickering)
+  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting)
   const applyNativeConstraint = (constraint) => {
     const video = document.querySelector('video');
     if (video && video.srcObject) {
       const track = video.srcObject.getVideoTracks()[0];
       if (track && typeof track.applyConstraints === 'function') {
-        track.applyConstraints({ advanced: [constraint] }).catch(err => console.warn("Hardware not supported", err));
+        track.applyConstraints({ advanced: [constraint] }).catch(() => {});
       }
     }
   };
 
-  const handleZoom = (e) => {
-    const newZoom = Number(e.target.value);
-    setZoom(newZoom);
-    applyNativeConstraint({ zoom: newZoom });
+  // Pinch-to-Zoom Logic
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialTouchDist.current = dist;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && initialTouchDist.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = dist / initialTouchDist.current;
+      let newZoom = Math.min(Math.max(currentZoom.current * scale, 1), 5); 
+      
+      applyNativeConstraint({ zoom: newZoom });
+      
+      initialTouchDist.current = dist;
+      currentZoom.current = newZoom;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    initialTouchDist.current = null;
   };
 
   const toggleFlash = () => {
@@ -125,8 +155,16 @@ export default function StudentScanner() {
   const flipCamera = () => {
     setMessage('Switching camera...');
     setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    currentZoom.current = 1; // Reset zoom on flip
     setTimeout(() => setMessage(''), 500);
   };
+
+  // Memoize constraints to prevent camera flickering on re-renders
+  const cameraConstraints = useMemo(() => ({
+    facingMode: facingMode,
+    width: { ideal: 1920 },
+    height: { ideal: 1080 }
+  }), [facingMode]);
 
   if (isMarked) {
     return (
@@ -175,12 +213,7 @@ export default function StudentScanner() {
               }
             }}
             formats={['qr_code']}
-            // Removed the dynamic zoom/flash constraints here to stop the screen from remounting and flickering
-            constraints={{ 
-              facingMode: facingMode,
-              width: { ideal: 1920 },
-              height: { ideal: 1080 }
-            }}
+            constraints={cameraConstraints}
             components={{
               audio: false,
               tracker: true, 
@@ -193,8 +226,14 @@ export default function StudentScanner() {
           />
         )}
         
-        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-           <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
+        {/* Invisible Overlay for Pinch-to-Zoom & Target Reticle */}
+        <div 
+          className="absolute inset-0 z-30 flex items-center justify-center touch-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+           <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none">
               <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-xl -mt-1 -ml-1"></div>
               <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-xl -mt-1 -mr-1"></div>
               <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-xl -mb-1 -ml-1"></div>
@@ -207,16 +246,7 @@ export default function StudentScanner() {
         )}
       </div>
 
-      {/* Zoom Slider */}
-      <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-lg">
-        <span className="text-white text-xs font-bold">1x</span>
-        <input 
-          type="range" min="1" max="5" step="0.1" value={zoom} onChange={handleZoom} 
-          className="w-32 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[#2563eb]" 
-        />
-        <span className="text-white text-xs font-bold">5x</span>
-      </div>
-
+      {/* Controls */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
