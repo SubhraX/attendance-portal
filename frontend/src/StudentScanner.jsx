@@ -80,32 +80,34 @@ export default function StudentScanner() {
       scannerRef.current = new Html5Qrcode("reader");
     }
 
-    if (scannerRef.current.isScanning) {
-      await scannerRef.current.stop();
+    try {
+      if (scannerRef.current.isScanning) {
+        await scannerRef.current.stop();
+        scannerRef.current.clear(); // Ensure the old video element is destroyed
+      }
+    } catch (e) {
+      console.warn("Cleanup error:", e);
     }
 
     try {
+      // FIX: In html5-qrcode, advanced constraints go in the FIRST argument
+      const mediaConstraints = {
+        facingMode: mode,
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 }
+      };
+
       await scannerRef.current.start(
-        { facingMode: mode },
-        { 
-          fps: 15, // 15 is the sweet spot; 20+ can cause thermal throttling on older phones
-          qrbox: { width: 260, height: 260 }, 
-          // REMOVED aspectRatio: 1.0 (Let the phone use its native sensor ratio)
-          // Use native videoConstraints for high-res auto-focusing
-          videoConstraints: {
-            facingMode: mode,
-            width: { ideal: 1920, min: 640 },
-            height: { ideal: 1080, min: 480 }
-          }
-        },
+        mediaConstraints,
+        { fps: 15, qrbox: { width: 260, height: 260 } }, // Config goes in the second
         onScanSuccess,
-        () => {} // Ignore continuous frame errors
+        () => {} 
       );
       setIsFlashOn(false);
       setZoom(1); 
     } catch (err) {
-      console.error("HD Camera error, falling back:", err);
-      // Safe Fallback: If a very old device rejects the HD request, drop constraints
+      console.error("Camera error, trying fallback:", err);
+      // Fallback for older devices that reject specific resolution constraints
       try {
         await scannerRef.current.start(
           { facingMode: mode },
