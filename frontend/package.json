@@ -12,14 +12,13 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@yudiel/react-qr-scanner": "^2.6.0",
     "axios": "^1.20.0",
-    "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-qr-code": "^2.2.0",
-    "react-router-dom": "^7.18.4",
-    "@yudiel/react-qr-scanner": "^2.6.0"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

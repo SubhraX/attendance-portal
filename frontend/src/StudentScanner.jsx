@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scanner } from '@yudiel/react-qr-scanner';
-import { Html5Qrcode } from 'html5-qrcode';
 
 export default function StudentScanner() {
   const [message, setMessage] = useState('');
@@ -10,7 +9,6 @@ export default function StudentScanner() {
   const [facingMode, setFacingMode] = useState('environment'); 
   const [isCapturing, setIsCapturing] = useState(false);
   
-  const fileInputRef = useRef(null);
   const isProcessingRef = useRef(false); 
   const navigate = useNavigate();
 
@@ -79,36 +77,34 @@ export default function StudentScanner() {
     }
   };
 
-  const handleGalleryUpload = async (e) => {
-    if (e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    setMessage('Scanning image...');
+  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting, with Hardware Checks)
+  const applyNativeConstraint = async (constraints) => {
+    const video = document.querySelector('video');
+    if (!video || !video.srcObject) return false;
+    
+    const track = video.srcObject.getVideoTracks()[0];
+    if (!track || typeof track.applyConstraints !== 'function') return false;
+
+    // Get the name of the constraint we are trying to apply (e.g., 'torch' or 'zoom')
+    const constraintKey = Object.keys(constraints)[0]; 
 
     try {
-      const html5QrCode = new Html5Qrcode("hidden-gallery-reader");
-      const decodedText = await html5QrCode.scanFile(file, false);
-      
-      if (decodedText) {
-         setMessage('');
-         processQRData(decodedText);
+      // 1. Check if the device hardware actually supports this feature
+      if (typeof track.getCapabilities === 'function') {
+        const capabilities = track.getCapabilities();
+        if (!capabilities[constraintKey]) return false;
       }
+      
+      // 2. Standard modern browser application
+      await track.applyConstraints({ advanced: [constraints] });
+      return true;
     } catch (err) {
-      setMessage('❌ No valid QR code found in image');
-      setTimeout(() => {
-        setMessage('');
-        isProcessingRef.current = false; // CRITICAL FIX: Unlocks the scanner after a failed gallery upload
-      }, 2000);
-    }
-    e.target.value = ''; 
-  };
-
-  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting)
-  const applyNativeConstraint = (constraint) => {
-    const video = document.querySelector('video');
-    if (video && video.srcObject) {
-      const track = video.srcObject.getVideoTracks()[0];
-      if (track && typeof track.applyConstraints === 'function') {
-        track.applyConstraints({ advanced: [constraint] }).catch(() => {});
+      // 3. Fallback for older Android/iOS versions that reject the 'advanced' array format
+      try {
+        await track.applyConstraints(constraints);
+        return true;
+      } catch (fallbackErr) {
+        return false;
       }
     }
   };
@@ -133,7 +129,7 @@ export default function StudentScanner() {
       const scale = dist / initialTouchDist.current;
       let newZoom = Math.min(Math.max(currentZoom.current * scale, 1), 5); 
       
-      applyNativeConstraint({ zoom: newZoom });
+      applyNativeConstraint({ zoom: newZoom }); // Automatically ignores if zoom isn't supported
       
       initialTouchDist.current = dist;
       currentZoom.current = newZoom;
@@ -144,12 +140,17 @@ export default function StudentScanner() {
     initialTouchDist.current = null;
   };
 
-  const toggleFlash = () => {
-    setIsFlashOn(prev => {
-      const newState = !prev;
-      applyNativeConstraint({ torch: newState });
-      return newState;
-    });
+  // Robust Flash Toggle
+  const toggleFlash = async () => {
+    const newState = !isFlashOn;
+    const success = await applyNativeConstraint({ torch: newState });
+    
+    if (success) {
+      setIsFlashOn(newState);
+    } else {
+      setMessage('Flash is not supported on this browser/device.');
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
   
   const flipCamera = () => {
@@ -184,8 +185,6 @@ export default function StudentScanner() {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans selection:bg-[#2563eb] selection:text-white">
-      
-      <div id="hidden-gallery-reader" style={{ display: 'none' }}></div>
 
       <div className="absolute top-0 left-0 w-full p-5 flex items-center justify-between z-50 bg-gradient-to-b from-black/90 to-transparent">
         <button onClick={() => navigate('/')} className="text-white p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all">
@@ -246,16 +245,8 @@ export default function StudentScanner() {
         )}
       </div>
 
-      {/* Controls */}
-      <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
-        <div className="flex flex-col items-center gap-2">
-          <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          </button>
-          <span className="text-white text-xs font-medium drop-shadow-md">Gallery</span>
-          <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleGalleryUpload} />
-        </div>
-
+      {/* Centered Camera Controls */}
+      <div className="absolute bottom-12 left-0 w-full flex justify-center gap-16 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={toggleFlash} className={`w-14 h-14 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg ${isFlashOn ? 'bg-white text-black' : 'bg-black/40 text-white hover:bg-white/10'}`}>
             <svg className="w-6 h-6" fill={isFlashOn ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
