@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
 
 export default function FacultyRecords() {
-  const { showToast } = useToast(); 
+  const { showToast } = useToast();
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Registration Modal State
   const [showRegModal, setShowRegModal] = useState(false);
   const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
@@ -15,17 +15,17 @@ export default function FacultyRecords() {
   // Student Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
-  
+
   // Sub-menu state for deletions
-  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
-  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   // Advanced Calendar State
   const [availableMonths, setAvailableMonths] = useState([]);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [attendanceData, setAttendanceData] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
-  
+
   // Edit Student State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '' });
@@ -84,7 +84,7 @@ export default function FacultyRecords() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const records = await res.json();
-      
+
       if (res.ok && Array.isArray(records)) {
         const dataMap = {};
         const monthsSet = new Set();
@@ -94,7 +94,7 @@ export default function FacultyRecords() {
           if (!isNaN(d)) {
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            
+
             dataMap[dateStr] = r.status || 'present';
             monthsSet.add(monthStr);
           }
@@ -103,7 +103,7 @@ export default function FacultyRecords() {
         const sortedMonths = Array.from(monthsSet).sort();
         setAttendanceData(dataMap);
         setAvailableMonths(sortedMonths);
-        
+
         if (sortedMonths.length > 0) {
           setCurrentMonthIndex(sortedMonths.length - 1);
           setCalYear(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[0]));
@@ -203,14 +203,14 @@ export default function FacultyRecords() {
   };
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  
+
   const shiftMonth = (offset) => {
     if (availableMonths.length === 0) return;
-    
+
     let newIndex = currentMonthIndex + offset;
     if (newIndex < 0) newIndex = 0;
     if (newIndex >= availableMonths.length) newIndex = availableMonths.length - 1;
-    
+
     setCurrentMonthIndex(newIndex);
     setCalYear(parseInt(availableMonths[newIndex].split('-')[0]));
     setCalMonth(parseInt(availableMonths[newIndex].split('-')[1]) - 1);
@@ -219,17 +219,17 @@ export default function FacultyRecords() {
   const renderCalendar = () => {
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const firstDay = new Date(calYear, calMonth, 1).getDay();
-    
+
     const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10"></div>);
     }
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
-      
-      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500'; 
+
+      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500';
       if (status === 'present') {
         styleClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]';
       } else if (status === 'absent') {
@@ -245,14 +245,14 @@ export default function FacultyRecords() {
     return days;
   };
 
-  const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredStudents = students.filter(s =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col h-full relative">
-      
+
       {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center mb-8 gap-4 bg-[#151b2b] p-6 rounded-2xl border border-[#1e293b] shadow-lg">
         <div>
@@ -260,7 +260,7 @@ export default function FacultyRecords() {
           <p className="text-gray-400 text-sm mt-1">Manage enrollments and view visual attendance</p>
         </div>
         <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-4">
-          <button 
+          <button
             onClick={() => setShowRegModal(true)}
             className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-2"
           >
@@ -269,9 +269,9 @@ export default function FacultyRecords() {
           </button>
           <div className="relative w-full sm:w-72">
             <svg className="w-5 h-5 absolute left-3 top-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input 
-              type="text" 
-              placeholder="Search students..." 
+            <input
+              type="text"
+              placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-[#5c98ff] transition-colors"
@@ -289,8 +289,8 @@ export default function FacultyRecords() {
             <div className="col-span-full text-center py-10 text-gray-500 border border-dashed border-gray-700 rounded-2xl">No students found.</div>
           ) : (
             filteredStudents.map(student => (
-              <div 
-                key={student._id} 
+              <div
+                key={student._id}
                 onClick={() => openStudentModal(student)}
                 className="bg-[#151b2b] border border-[#1e293b] rounded-2xl p-5 hover:border-[#5c98ff] hover:shadow-[0_0_20px_rgba(92,152,255,0.1)] cursor-pointer transition-all group relative overflow-hidden flex flex-col"
               >
@@ -320,9 +320,9 @@ export default function FacultyRecords() {
             <button onClick={() => setShowRegModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             <h3 className="text-2xl font-bold text-white mb-6">Register New Student</h3>
             <form onSubmit={handleRegisterStudent} className="flex flex-col gap-4">
-              <input type="text" placeholder="Full Name" required value={regForm.name} onChange={e => setRegForm({...regForm, name: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
-              <input type="email" placeholder="Email Address" required value={regForm.email} onChange={e => setRegForm({...regForm, email: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
-              <input type="password" placeholder="Password" required value={regForm.password} onChange={e => setRegForm({...regForm, password: e.target.value})} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
+              <input type="text" placeholder="Full Name" required value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
+              <input type="email" placeholder="Email Address" required value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
+              <input type="password" placeholder="Password" required value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
               <button type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all">Create Account</button>
             </form>
           </div>
@@ -333,18 +333,18 @@ export default function FacultyRecords() {
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
           <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh]">
-            
+
             <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full transition-colors z-10"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
 
             {/* Modal Header */}
             <div className="p-8 border-b border-[#1e293b] bg-gradient-to-b from-[#101524] to-[#151b2b] relative">
-              <button 
-                onClick={() => setIsEditing(!isEditing)} 
+              <button
+                onClick={() => setIsEditing(!isEditing)}
                 className="absolute top-6 right-16 text-xs font-bold bg-[#2563eb]/20 text-[#5c98ff] px-3 py-1.5 rounded-lg hover:bg-[#2563eb]/40 transition-colors"
               >
                 {isEditing ? 'Cancel Edit' : 'Edit Info'}
               </button>
-              
+
               <div className="flex items-center gap-5 mt-4">
                 <div className="w-16 h-16 rounded-full bg-[#2563eb]/20 text-[#5c98ff] flex items-center justify-center font-bold text-3xl shadow-inner shrink-0">
                   {selectedStudent.name.charAt(0).toUpperCase()}
@@ -353,15 +353,15 @@ export default function FacultyRecords() {
                   <form onSubmit={handleEditSubmit} className="flex flex-col gap-3 w-full pr-2">
                     <div>
                       <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Student Name</label>
-                      <input type="text" required value={editForm.name} onChange={e=>setEditForm({...editForm, name: e.target.value})} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
+                      <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
                     </div>
                     <div>
                       <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Email Address</label>
-                      <input type="email" required value={editForm.email} onChange={e=>setEditForm({...editForm, email: e.target.value})} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
+                      <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
                     </div>
                     <div>
                       <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Reset Password</label>
-                      <input type="text" placeholder="Leave blank to keep current password..." value={editForm.password} onChange={e=>setEditForm({...editForm, password: e.target.value})} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm placeholder-gray-600 focus:border-red-500 focus:outline-none" />
+                      <input type="text" placeholder="Leave blank to keep current password..." value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm placeholder-gray-600 focus:border-red-500 focus:outline-none" />
                     </div>
                     <button type="submit" className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold py-2.5 rounded-lg transition-colors mt-2 shadow-lg">Save Changes</button>
                   </form>
@@ -377,14 +377,14 @@ export default function FacultyRecords() {
             {/* Visual Calendar Body */}
             <div className="p-8 overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                
+
                 {/* Calendar Navigation */}
                 <div className="flex items-center gap-4 bg-[#101524] px-4 py-2 rounded-xl border border-[#1e293b]">
                   <button onClick={() => shiftMonth(-1)} disabled={currentMonthIndex <= 0} className={`p-1 ${currentMonthIndex <= 0 ? 'text-gray-700' : 'text-gray-400 hover:text-white'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
                   <span className="text-white font-bold min-w-[120px] text-center">{monthNames[calMonth]} {calYear}</span>
                   <button onClick={() => shiftMonth(1)} disabled={currentMonthIndex >= availableMonths.length - 1} className={`p-1 ${currentMonthIndex >= availableMonths.length - 1 ? 'text-gray-700' : 'text-gray-400 hover:text-white'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
-                
+
                 <div className="hidden sm:flex gap-3 text-xs text-gray-400 font-medium">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Present</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Absent</span>
@@ -408,15 +408,15 @@ export default function FacultyRecords() {
             {/* Actions Footer */}
             <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex flex-col gap-4 shrink-0 mt-auto">
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={() => handleResetDevice(selectedStudent._id)}
                   disabled={!selectedStudent.deviceId}
                   className="flex-1 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-[#2563eb]/10 text-[#5c98ff] border border-[#2563eb]/30 hover:bg-[#2563eb]/20"
                 >
                   {selectedStudent.deviceId ? 'Unlock Device' : 'Device Unlocked'}
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => setShowDeleteMenu(!showDeleteMenu)}
                   className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm border ${showDeleteMenu ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20 hover:text-red-400'}`}
                 >
@@ -424,21 +424,47 @@ export default function FacultyRecords() {
                 </button>
               </div>
 
-              {/* Sub-menu Options */}
-              {showDeleteMenu && (
-                <div className="flex gap-4 pt-2 animate-fade-in-up">
-                  <button 
-                    onClick={() => handleDeleteAttendanceOnly(selectedStudent._id)}
-                    className="flex-1 py-2.5 rounded-lg font-bold transition-all text-xs bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20"
-                  >
-                    Clear Attendance Only
-                  </button>
-                  <button 
-                    onClick={() => handleRemoveStudent(selectedStudent._id)}
-                    className="flex-1 py-2.5 rounded-lg font-bold transition-all text-xs bg-red-600 hover:bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]"
-                  >
-                    Delete Entire Student
-                  </button>
+              {/* SEPARATE DELETE CONFIRMATION MODAL */}
+              {showDeleteModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
+                  <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-md shadow-2xl p-8 relative flex flex-col text-center">
+
+                    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                      <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-white mb-2">Delete Data</h3>
+                    <p className="text-gray-400 text-sm mb-8">What data would you like to remove for <span className="font-bold text-white">{selectedStudent?.name}</span>?</p>
+
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={async () => {
+                          await handleDeleteAttendanceOnly(selectedStudent._id);
+                          setShowDeleteModal(false);
+                        }}
+                        className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20"
+                      >
+                        Clear Attendance Only
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          await handleRemoveStudent(selectedStudent._id);
+                          setShowDeleteModal(false);
+                        }}
+                        className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                      >
+                        Delete Entire Student Account
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteModal(false)}
+                        className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-[#1e293b] text-gray-300 hover:bg-gray-700 mt-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
