@@ -146,16 +146,36 @@ export default function StudentScanner() {
     setMessage('Scanning image...');
 
     try {
-      const decodedText = await scannerRef.current?.scanFile(file, true);
+      // Ensure the scanner instance is ready
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode("reader");
+      }
+
+      // Stop live scanning if it's running before checking the file
+      if (scannerRef.current.isScanning) {
+        await scannerRef.current.stop();
+      }
+
+      // Pass true for the second argument (showImage) to help with debugging
+      // The library's scanFile method is often more successful when it's not fighting live video
+      const decodedText = await scannerRef.current.scanFile(file, true);
+      
       if (decodedText) {
          onScanSuccess(decodedText);
       }
     } catch (err) {
+      console.error("Gallery scan failed:", err);
       setMessage('❌ No valid QR code found in image');
-      setTimeout(() => setMessage(''), 2000);
+      setTimeout(() => {
+        setMessage('');
+        // Resume the camera if the gallery scan failed
+        if (!isMarked) {
+          startCamera(facingMode);
+        }
+      }, 2000);
     }
-    e.target.value = ''; 
-  };
+    e.target.value = ''; // Reset input so the same file can be selected again if needed
+  };v
 
   const toggleFlash = async () => {
     if (!scannerRef.current || !scannerRef.current.isScanning) return;
