@@ -1,17 +1,16 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import { Html5Qrcode } from 'html5-qrcode';
 
 export default function StudentScanner() {
   const [message, setMessage] = useState('');
   const [isMarked, setIsMarked] = useState(false);
   const [isFlashOn, setIsFlashOn] = useState(false);
   const [facingMode, setFacingMode] = useState('environment'); 
-  const [isFlipping, setIsFlipping] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [zoom, setZoom] = useState(1);
   
-  const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
   const isProcessingRef = useRef(false); 
   const navigate = useNavigate();
@@ -23,194 +22,94 @@ export default function StudentScanner() {
     }
   }, [isMarked, navigate]);
 
-  const onScanSuccess = useCallback(async (decodedText) => {
+  // Master function to process data (from both Camera and Gallery)
+  const processQRData = async (decodedText) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
 
     // Instant UPI-style haptic feedback
     if (navigator.vibrate) navigator.vibrate(50);
-
-    if (scannerRef.current) {
-      scannerRef.current.pause(true); 
-    }
     setIsCapturing(true);
 
     try {
-      const qrData = JSON.parse(decodedText);
-      const authToken = localStorage.getItem('token');
+      let classId, token;
 
+      // 1. Crash-proof JSON parsing
+      try {
+        const qrData = JSON.parse(decodedText);
+        classId = qrData.classId;
+        token = qrData.token;
+      } catch (parseError) {
+        // If it's NOT JSON, show the raw text on screen to help you debug the backend
+        setMessage(`Format Error. QR contains: "${decodedText}"`);
+        setTimeout(() => {
+          setMessage('');
+          setIsCapturing(false);
+          isProcessingRef.current = false;
+        }, 4000);
+        return;
+      }
+
+      // 2. Send to backend
+      const authToken = localStorage.getItem('token');
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ classId: qrData.classId, scannedToken: qrData.token })
+        body: JSON.stringify({ classId: classId, scannedToken: token })
       });
 
       const data = await res.json();
       if (res.ok) {
-        setTimeout(async () => {
+        setTimeout(() => {
           setIsCapturing(false);
           setIsMarked(true);
-          if (scannerRef.current) {
-            await scannerRef.current.stop();
-            scannerRef.current.clear();
-          }
         }, 400);
       } else {
         setMessage(`❌ ${data.message}`);
         setTimeout(() => {
           setMessage('');
           setIsCapturing(false);
-          if (scannerRef.current) scannerRef.current.resume();
           isProcessingRef.current = false;
         }, 2000);
       }
     } catch (err) {
-      setMessage('❌ Invalid QR Format');
+      setMessage('❌ Network Error');
       setTimeout(() => {
         setMessage('');
         setIsCapturing(false);
-        if (scannerRef.current) scannerRef.current.resume();
         isProcessingRef.current = false;
       }, 2000);
     }
-  }, []);
-
-  const startCamera = async (mode) => {
-    if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode("reader");
-    }
-
-    if (scannerRef.current.isScanning) {
-      await scannerRef.current.stop();
-    }
-
-    try {
-      await scannerRef.current.start(
-        { facingMode: mode },
-        { 
-          fps: 15, // 15 is the sweet spot; 20+ can cause thermal throttling on older phones
-          qrbox: { width: 260, height: 260 }, 
-          // REMOVED aspectRatio: 1.0 (Let the phone use its native sensor ratio)
-          // Use native videoConstraints for high-res auto-focusing
-          videoConstraints: {
-            facingMode: mode,
-            width: { ideal: 1920, min: 640 },
-            height: { ideal: 1080, min: 480 }
-          }
-        },
-        onScanSuccess,
-        () => {} // Ignore continuous frame errors
-      );
-      setIsFlashOn(false);
-      setZoom(1); 
-    } catch (err) {
-      console.error("HD Camera error, falling back:", err);
-      // Safe Fallback: If a very old device rejects the HD request, drop constraints
-      try {
-        await scannerRef.current.start(
-          { facingMode: mode },
-          { fps: 15, qrbox: { width: 260, height: 260 } },
-          onScanSuccess,
-          () => {} 
-        );
-        setIsFlashOn(false);
-        setZoom(1);
-      } catch (fallbackErr) {
-        setMessage("Camera access denied or unavailable.");
-      }
-    }
   };
 
-  useEffect(() => {
-    if (isMarked) return;
-    
-    let isMounted = true;
-    startCamera(facingMode).then(() => {
-      if (!isMounted && scannerRef.current?.isScanning) {
-        scannerRef.current.stop();
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop().catch(console.error);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
-
+  // Gallery Upload using headless html5-qrcode
   const handleGalleryUpload = async (e) => {
     if (e.target.files.length === 0) return;
     const file = e.target.files[0];
-    setMessage('Processing image...');
+    setMessage('Scanning image...');
 
     try {
-      // 1. Stop the live camera so the decoder can dedicate all resources to the file
-      if (scannerRef.current && scannerRef.current.isScanning) {
-        await scannerRef.current.stop();
-      }
-
-      // 2. Scan file. Pass 'false' to prevent the library from breaking your video UI DOM
-      const decodedText = await scannerRef.current.scanFile(file, false);
+      // Create a temporary, invisible scanner just for the file
+      const html5QrCode = new Html5Qrcode("hidden-gallery-reader");
+      const decodedText = await html5QrCode.scanFile(file, false);
       
       if (decodedText) {
-         onScanSuccess(decodedText);
+         setMessage('');
+         processQRData(decodedText);
       }
     } catch (err) {
-      console.warn("Gallery scan failed:", err);
       setMessage('❌ No valid QR code found in image');
-      
-      // 3. CRITICAL: Gracefully restart the camera feed if the image scan fails
-      setTimeout(() => {
-        setMessage('');
-        if (!isMarked) {
-          startCamera(facingMode);
-        }
-      }, 2000);
+      setTimeout(() => setMessage(''), 2000);
     }
-    
-    // Reset the input so the user can select the same file again if they want to retry
     e.target.value = ''; 
   };
 
-  const toggleFlash = async () => {
-    if (!scannerRef.current || !scannerRef.current.isScanning) return;
-    try {
-      const newFlashState = !isFlashOn;
-      await scannerRef.current.applyVideoConstraints({
-        advanced: [{ torch: newFlashState }]
-      });
-      setIsFlashOn(newFlashState);
-    } catch (error) {
-      setMessage('Flash not supported on this device');
-      setTimeout(() => setMessage(''), 2000);
-    }
-  };
-
-  const handleZoom = async (e) => {
-    const newZoom = Number(e.target.value);
-    setZoom(newZoom);
-    if (!scannerRef.current || !scannerRef.current.isScanning) return;
-    try {
-      await scannerRef.current.applyVideoConstraints({
-        advanced: [{ zoom: newZoom }]
-      });
-    } catch (error) {
-      // Zoom not supported silently fails
-    }
-  };
-
+  const toggleFlash = () => setIsFlashOn(prev => !prev);
+  
   const flipCamera = () => {
-    setIsFlipping(true);
-    setTimeout(async () => {
-      const newMode = facingMode === 'environment' ? 'user' : 'environment';
-      setFacingMode(newMode);
-      setMessage('Switching camera...');
-      await startCamera(newMode);
-      setMessage('');
-      setIsFlipping(false);
-    }, 300); 
+    setMessage('Switching camera...');
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    setTimeout(() => setMessage(''), 500);
   };
 
   if (isMarked) {
@@ -232,6 +131,9 @@ export default function StudentScanner() {
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans selection:bg-[#2563eb] selection:text-white">
       
+      {/* Hidden div required for Gallery upload utility */}
+      <div id="hidden-gallery-reader" style={{ display: 'none' }}></div>
+
       <div className="absolute top-0 left-0 w-full p-5 flex items-center justify-between z-50 bg-gradient-to-b from-black/90 to-transparent">
         <button onClick={() => navigate('/')} className="text-white p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -241,17 +143,6 @@ export default function StudentScanner() {
       </div>
 
       <style>{`
-        #reader { width: 100% !important; height: 100% !important; background: black; position: relative; overflow: hidden; }
-        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; position: absolute; top: 0; left: 0; transform: ${facingMode === 'user' ? 'scaleX(-1)' : 'none'} !important; }
-        #qr-shaded-region { border-color: rgba(0, 0, 0, 0.7) !important; z-index: 10 !important; }
-        
-        .flip-animate { animation: flip-cam 0.6s ease-in-out; }
-        @keyframes flip-cam {
-          0% { transform: perspective(800px) rotateY(0deg) scale(1); opacity: 1; }
-          50% { transform: perspective(800px) rotateY(90deg) scale(0.8); opacity: 0.2; }
-          100% { transform: perspective(800px) rotateY(0deg) scale(1); opacity: 1; }
-        }
-
         .flash-snap { animation: snap 0.4s ease-out forwards; }
         @keyframes snap {
           0% { opacity: 0; transform: scale(1); }
@@ -260,22 +151,63 @@ export default function StudentScanner() {
         }
       `}</style>
 
-      <div className={`absolute left-0 w-full h-[135vh] -top-[25vh] ${isFlipping ? 'flip-animate' : ''}`}>
-        <div id="reader" className="w-full h-full flex items-center justify-center"></div>
+      {/* WASM Camera Viewport */}
+      <div className="absolute left-0 w-full h-[135vh] -top-[25vh]">
+        {!isProcessingRef.current && !isMarked && (
+          <Scanner 
+            onScan={(result) => {
+              if (result && result.length > 0) {
+                processQRData(result[0].rawValue);
+              }
+            }}
+            formats={['qr_code']}
+            constraints={{ 
+              facingMode: facingMode,
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              advanced: [
+                zoom !== 1 ? { zoom: zoom } : undefined,
+                isFlashOn ? { torch: true } : undefined
+              ].filter(Boolean)
+            }}
+            components={{
+              audio: false,
+              tracker: true, 
+              finder: false
+            }}
+            styles={{
+              container: { width: '100%', height: '100%' },
+              video: { width: '100%', height: '100%', objectFit: 'cover' }
+            }}
+          />
+        )}
+        
+        {/* Custom Target Reticle overlay */}
+        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+           <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-xl -mt-1 -ml-1"></div>
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-xl -mt-1 -mr-1"></div>
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-xl -mb-1 -ml-1"></div>
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-500 rounded-br-xl -mb-1 -mr-1"></div>
+           </div>
+        </div>
+
         {isCapturing && (
           <div className="absolute inset-0 bg-white z-40 pointer-events-none flash-snap"></div>
         )}
       </div>
 
+      {/* Zoom Slider */}
       <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-lg">
         <span className="text-white text-xs font-bold">1x</span>
         <input 
-          type="range" min="1" max="5" step="0.1" value={zoom} onChange={handleZoom} 
+          type="range" min="1" max="5" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} 
           className="w-32 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[#2563eb]" 
         />
         <span className="text-white text-xs font-bold">5x</span>
       </div>
 
+      {/* Controls */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
@@ -300,10 +232,10 @@ export default function StudentScanner() {
         </div>
       </div>
 
-      {/* FIXED VIEWPORT POSITIONING & SMALL FONT */}
+      {/* Messages */}
       {message && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] bg-black/70 backdrop-blur-xl px-5 py-2.5 rounded-[14px] border border-white/10 shadow-2xl w-auto max-w-[80vw] flex items-center justify-center pointer-events-none">
-          <p className="text-white font-medium text-xs text-center leading-snug whitespace-pre-wrap">{message}</p>
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] bg-black/80 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/10 shadow-2xl w-auto max-w-[80vw] flex items-center justify-center pointer-events-none">
+          <p className="text-white font-bold text-sm text-center leading-snug whitespace-pre-wrap">{message}</p>
         </div>
       )}
     </div>
