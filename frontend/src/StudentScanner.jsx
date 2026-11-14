@@ -87,8 +87,17 @@ export default function StudentScanner() {
     try {
       await scannerRef.current.start(
         { facingMode: mode },
-        // Increased FPS to 20 for faster, more aggressive QR detection
-        { fps: 20, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+        { 
+          fps: 20, 
+          qrbox: { width: 260, height: 260 }, 
+          aspectRatio: 1.0,
+          // Force HD resolution to fix blurry iOS cameras
+          videoConstraints: {
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            advanced: [{ focusMode: "continuous" }] // Helps auto-focus on newer phones
+          }
+        },
         onScanSuccess,
         () => {} 
       );
@@ -96,7 +105,19 @@ export default function StudentScanner() {
       setZoom(1); 
     } catch (err) {
       console.error("Camera error:", err);
-      setMessage("Camera access denied or unavailable.");
+      // Fallback: If the device rejects the HD constraints, try again with defaults
+      try {
+        await scannerRef.current.start(
+          { facingMode: mode },
+          { fps: 20, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+          onScanSuccess,
+          () => {} 
+        );
+        setIsFlashOn(false);
+        setZoom(1);
+      } catch (fallbackErr) {
+        setMessage("Camera access denied or unavailable.");
+      }
     }
   };
 
