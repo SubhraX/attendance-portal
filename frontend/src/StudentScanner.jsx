@@ -85,21 +85,17 @@ export default function StudentScanner() {
     const track = video.srcObject.getVideoTracks()[0];
     if (!track || typeof track.applyConstraints !== 'function') return false;
 
-    // Get the name of the constraint we are trying to apply (e.g., 'torch' or 'zoom')
     const constraintKey = Object.keys(constraints)[0]; 
 
     try {
-      // 1. Check if the device hardware actually supports this feature
       if (typeof track.getCapabilities === 'function') {
         const capabilities = track.getCapabilities();
         if (!capabilities[constraintKey]) return false;
       }
       
-      // 2. Standard modern browser application
       await track.applyConstraints({ advanced: [constraints] });
       return true;
     } catch (err) {
-      // 3. Fallback for older Android/iOS versions that reject the 'advanced' array format
       try {
         await track.applyConstraints(constraints);
         return true;
@@ -129,7 +125,7 @@ export default function StudentScanner() {
       const scale = dist / initialTouchDist.current;
       let newZoom = Math.min(Math.max(currentZoom.current * scale, 1), 5); 
       
-      applyNativeConstraint({ zoom: newZoom }); // Automatically ignores if zoom isn't supported
+      applyNativeConstraint({ zoom: newZoom }); 
       
       initialTouchDist.current = dist;
       currentZoom.current = newZoom;
@@ -140,7 +136,6 @@ export default function StudentScanner() {
     initialTouchDist.current = null;
   };
 
-  // Robust Flash Toggle
   const toggleFlash = async () => {
     const newState = !isFlashOn;
     const success = await applyNativeConstraint({ torch: newState });
@@ -156,11 +151,10 @@ export default function StudentScanner() {
   const flipCamera = () => {
     setMessage('Switching camera...');
     setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-    currentZoom.current = 1; // Reset zoom on flip
+    currentZoom.current = 1; 
     setTimeout(() => setMessage(''), 500);
   };
 
-  // Memoize constraints to prevent camera flickering on re-renders
   const cameraConstraints = useMemo(() => ({
     facingMode: facingMode,
     width: { ideal: 1920 },
@@ -245,7 +239,7 @@ export default function StudentScanner() {
         )}
       </div>
 
-      {/* Centered Camera Controls */}
+      {/* Centered Camera Controls (Flash and Flip only) */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-16 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={toggleFlash} className={`w-14 h-14 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg ${isFlashOn ? 'bg-white text-black' : 'bg-black/40 text-white hover:bg-white/10'}`}>
