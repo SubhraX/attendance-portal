@@ -212,4 +212,14 @@ router.post('/stop', protect, instructorOnly, async (req, res) => {
   }
 });
 
+// Delete ONLY a specific student's attendance records (Keep the student account)
+router.delete('/student/:id/records', protect, instructorOnly, async (req, res) => {
+  try {
+    await Attendance.deleteMany({ student: req.params.id });
+    res.status(200).json({ message: 'Attendance records deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error deleting attendance', error: error.message });
+  }
+});
+
 module.exports = router;

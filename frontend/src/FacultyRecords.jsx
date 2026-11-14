@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useToast } from './ToastContext';
 
 export default function FacultyRecords() {
+  const { showToast } = useToast(); 
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,10 +16,13 @@ export default function FacultyRecords() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
   
-  // NEW: Advanced Calendar State
+  // Sub-menu state for deletions
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  
+  // Advanced Calendar State
   const [availableMonths, setAvailableMonths] = useState([]);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
-  const [attendanceData, setAttendanceData] = useState({}); // Stores { "YYYY-MM-DD": "present" or "absent" }
+  const [attendanceData, setAttendanceData] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   
@@ -52,22 +58,23 @@ export default function FacultyRecords() {
         body: JSON.stringify({ ...regForm, role: 'student' })
       });
       if (res.ok) {
-        alert("Student registered successfully!");
+        showToast("Student registered successfully!");
         setShowRegModal(false);
         setRegForm({ name: '', email: '', password: '' });
         fetchStudents();
       } else {
         const data = await res.json();
-        alert(data.message || 'Registration failed');
+        showToast(data.message || 'Registration failed');
       }
     } catch (error) {
-      alert("Error connecting to server");
+      showToast("Error connecting to server");
     }
   };
 
   const openStudentModal = async (student) => {
     setSelectedStudent(student);
     setIsEditing(false);
+    setShowDeleteMenu(false); // Reset delete menu
     setEditForm({ name: student.name, email: student.email, password: '' });
     setIsModalLoading(true);
 
@@ -98,11 +105,10 @@ export default function FacultyRecords() {
         setAvailableMonths(sortedMonths);
         
         if (sortedMonths.length > 0) {
-          setCurrentMonthIndex(sortedMonths.length - 1); // Default to the most recent active month
+          setCurrentMonthIndex(sortedMonths.length - 1);
           setCalYear(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[0]));
           setCalMonth(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[1]) - 1);
         } else {
-          // Fallback if no records exist at all
           setCalYear(new Date().getFullYear());
           setCalMonth(new Date().getMonth());
         }
@@ -127,15 +133,15 @@ export default function FacultyRecords() {
       });
 
       if (res.ok) {
-        alert("Student updated successfully!");
+        showToast("Student updated successfully!");
         setIsEditing(false);
         fetchStudents();
         setSelectedStudent({ ...selectedStudent, name: editForm.name, email: editForm.email });
       } else {
-        alert("Failed to update student");
+        showToast("Failed to update student");
       }
     } catch (error) {
-      alert("Error updating student");
+      showToast("Error updating student");
     }
   };
 
@@ -148,14 +154,36 @@ export default function FacultyRecords() {
         body: JSON.stringify({ studentId })
       });
       if (res.ok) {
+        showToast("Device unlocked successfully.");
         fetchStudents();
         setSelectedStudent({ ...selectedStudent, deviceId: null });
       }
     } catch (error) {
-      alert('Failed to reset device');
+      showToast('Failed to reset device');
     }
   };
 
+  // Option 1: Clear Attendance ONLY
+  const handleDeleteAttendanceOnly = async (studentId) => {
+    if (!window.confirm("Are you sure you want to wipe ALL attendance records for this student? The student will NOT be deleted.")) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/records`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showToast("Attendance records wiped completely.");
+        openStudentModal(selectedStudent); // Refresh modal to show empty calendar
+      } else {
+        showToast("Failed to clear attendance.");
+      }
+    } catch (error) {
+      showToast('Error clearing attendance data');
+    }
+  };
+
+  // Option 2: Delete Entire Student
   const handleRemoveStudent = async (studentId) => {
     if (!window.confirm("CRITICAL WARNING: This will permanently delete this student and ALL their attendance records. Proceed?")) return;
     try {
@@ -165,23 +193,21 @@ export default function FacultyRecords() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        alert("Student and records removed.");
+        showToast("Student and records removed.");
         fetchStudents();
         setSelectedStudent(null);
       }
     } catch (error) {
-      alert('Failed to remove student');
+      showToast('Failed to remove student');
     }
   };
 
-  // Calendar rendering logic
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   
   const shiftMonth = (offset) => {
     if (availableMonths.length === 0) return;
     
     let newIndex = currentMonthIndex + offset;
-    // Lock navigation to only available months
     if (newIndex < 0) newIndex = 0;
     if (newIndex >= availableMonths.length) newIndex = availableMonths.length - 1;
     
@@ -203,7 +229,7 @@ export default function FacultyRecords() {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
       
-      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500'; // Default Grey
+      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500'; 
       if (status === 'present') {
         styleClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]';
       } else if (status === 'absent') {
@@ -380,21 +406,41 @@ export default function FacultyRecords() {
             </div>
 
             {/* Actions Footer */}
-            <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex gap-4 shrink-0 mt-auto">
-              <button 
-                onClick={() => handleResetDevice(selectedStudent._id)}
-                disabled={!selectedStudent.deviceId}
-                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-[#2563eb]/10 text-[#5c98ff] border border-[#2563eb]/30 hover:bg-[#2563eb]/20"
-              >
-                {selectedStudent.deviceId ? 'Unlock Device' : 'Device Unlocked'}
-              </button>
-              
-              <button 
-                onClick={() => handleRemoveStudent(selectedStudent._id)}
-                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 hover:text-red-400"
-              >
-                Delete Student
-              </button>
+            <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex flex-col gap-4 shrink-0 mt-auto">
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => handleResetDevice(selectedStudent._id)}
+                  disabled={!selectedStudent.deviceId}
+                  className="flex-1 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-[#2563eb]/10 text-[#5c98ff] border border-[#2563eb]/30 hover:bg-[#2563eb]/20"
+                >
+                  {selectedStudent.deviceId ? 'Unlock Device' : 'Device Unlocked'}
+                </button>
+                
+                <button 
+                  onClick={() => setShowDeleteMenu(!showDeleteMenu)}
+                  className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm border ${showDeleteMenu ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20 hover:text-red-400'}`}
+                >
+                  {showDeleteMenu ? 'Cancel' : 'Delete Data...'}
+                </button>
+              </div>
+
+              {/* Sub-menu Options */}
+              {showDeleteMenu && (
+                <div className="flex gap-4 pt-2 animate-fade-in-up">
+                  <button 
+                    onClick={() => handleDeleteAttendanceOnly(selectedStudent._id)}
+                    className="flex-1 py-2.5 rounded-lg font-bold transition-all text-xs bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20"
+                  >
+                    Clear Attendance Only
+                  </button>
+                  <button 
+                    onClick={() => handleRemoveStudent(selectedStudent._id)}
+                    className="flex-1 py-2.5 rounded-lg font-bold transition-all text-xs bg-red-600 hover:bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                  >
+                    Delete Entire Student
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
