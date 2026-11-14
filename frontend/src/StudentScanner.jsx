@@ -88,28 +88,28 @@ export default function StudentScanner() {
       await scannerRef.current.start(
         { facingMode: mode },
         { 
-          fps: 20, 
+          fps: 15, // 15 is the sweet spot; 20+ can cause thermal throttling on older phones
           qrbox: { width: 260, height: 260 }, 
-          aspectRatio: 1.0,
-          // Force HD resolution to fix blurry iOS cameras
+          // REMOVED aspectRatio: 1.0 (Let the phone use its native sensor ratio)
+          // Use native videoConstraints for high-res auto-focusing
           videoConstraints: {
-            width: { ideal: 1280, max: 1920 },
-            height: { ideal: 720, max: 1080 },
-            advanced: [{ focusMode: "continuous" }] // Helps auto-focus on newer phones
+            facingMode: mode,
+            width: { ideal: 1920, min: 640 },
+            height: { ideal: 1080, min: 480 }
           }
         },
         onScanSuccess,
-        () => {} 
+        () => {} // Ignore continuous frame errors
       );
       setIsFlashOn(false);
       setZoom(1); 
     } catch (err) {
-      console.error("Camera error:", err);
-      // Fallback: If the device rejects the HD constraints, try again with defaults
+      console.error("HD Camera error, falling back:", err);
+      // Safe Fallback: If a very old device rejects the HD request, drop constraints
       try {
         await scannerRef.current.start(
           { facingMode: mode },
-          { fps: 20, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
+          { fps: 15, qrbox: { width: 260, height: 260 } },
           onScanSuccess,
           () => {} 
         );
