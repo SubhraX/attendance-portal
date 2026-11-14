@@ -41,7 +41,8 @@ export default function InstructorDashboard() {
       const socket = new WebSocket('wss://attendance-portal-p2lp.onrender.com');
       socketRef.current = socket;
       
-      socket.onopen = () => socket.send(JSON.stringify({ action: 'registerFaculty', classId: classId.trim() }));
+      // Change this line back to startRotation so the backend recognizes it
+      socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId: classId.trim(), duration: qrDuration }));
       socket.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === 'STUDENT_MARKED') {

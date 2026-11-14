@@ -22,25 +22,20 @@ export default function StudentScanner() {
     }
   }, [isMarked, navigate]);
 
-  // Master function to process data (from both Camera and Gallery)
   const processQRData = async (decodedText) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
 
-    // Instant UPI-style haptic feedback
     if (navigator.vibrate) navigator.vibrate(50);
     setIsCapturing(true);
 
     try {
       let classId, token;
-
-      // 1. Crash-proof JSON parsing
       try {
         const qrData = JSON.parse(decodedText);
         classId = qrData.classId;
         token = qrData.token;
       } catch (parseError) {
-        // If it's NOT JSON, show the raw text on screen to help you debug the backend
         setMessage(`Format Error. QR contains: "${decodedText}"`);
         setTimeout(() => {
           setMessage('');
@@ -50,7 +45,6 @@ export default function StudentScanner() {
         return;
       }
 
-      // 2. Send to backend
       const authToken = localStorage.getItem('token');
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/mark', {
         method: 'POST',
@@ -82,19 +76,18 @@ export default function StudentScanner() {
     }
   };
 
-  // Gallery Upload using headless html5-qrcode
   const handleGalleryUpload = async (e) => {
     if (e.target.files.length === 0) return;
     const file = e.target.files[0];
     setMessage('Scanning image...');
 
     try {
-      // Create a temporary, invisible scanner just for the file
       const html5QrCode = new Html5Qrcode("hidden-gallery-reader");
       const decodedText = await html5QrCode.scanFile(file, false);
       
       if (decodedText) {
          setMessage('');
+         html5QrCode.clear(); // Clear memory to prevent scanner lockup on subsequent uploads
          processQRData(decodedText);
       }
     } catch (err) {
@@ -104,7 +97,30 @@ export default function StudentScanner() {
     e.target.value = ''; 
   };
 
-  const toggleFlash = () => setIsFlashOn(prev => !prev);
+  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting to stop flickering)
+  const applyNativeConstraint = (constraint) => {
+    const video = document.querySelector('video');
+    if (video && video.srcObject) {
+      const track = video.srcObject.getVideoTracks()[0];
+      if (track && typeof track.applyConstraints === 'function') {
+        track.applyConstraints({ advanced: [constraint] }).catch(err => console.warn("Hardware not supported", err));
+      }
+    }
+  };
+
+  const handleZoom = (e) => {
+    const newZoom = Number(e.target.value);
+    setZoom(newZoom);
+    applyNativeConstraint({ zoom: newZoom });
+  };
+
+  const toggleFlash = () => {
+    setIsFlashOn(prev => {
+      const newState = !prev;
+      applyNativeConstraint({ torch: newState });
+      return newState;
+    });
+  };
   
   const flipCamera = () => {
     setMessage('Switching camera...');
@@ -131,7 +147,6 @@ export default function StudentScanner() {
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans selection:bg-[#2563eb] selection:text-white">
       
-      {/* Hidden div required for Gallery upload utility */}
       <div id="hidden-gallery-reader" style={{ display: 'none' }}></div>
 
       <div className="absolute top-0 left-0 w-full p-5 flex items-center justify-between z-50 bg-gradient-to-b from-black/90 to-transparent">
@@ -151,7 +166,6 @@ export default function StudentScanner() {
         }
       `}</style>
 
-      {/* WASM Camera Viewport */}
       <div className="absolute left-0 w-full h-[135vh] -top-[25vh]">
         {!isProcessingRef.current && !isMarked && (
           <Scanner 
@@ -161,14 +175,11 @@ export default function StudentScanner() {
               }
             }}
             formats={['qr_code']}
+            // Removed the dynamic zoom/flash constraints here to stop the screen from remounting and flickering
             constraints={{ 
               facingMode: facingMode,
               width: { ideal: 1920 },
-              height: { ideal: 1080 },
-              advanced: [
-                zoom !== 1 ? { zoom: zoom } : undefined,
-                isFlashOn ? { torch: true } : undefined
-              ].filter(Boolean)
+              height: { ideal: 1080 }
             }}
             components={{
               audio: false,
@@ -182,7 +193,6 @@ export default function StudentScanner() {
           />
         )}
         
-        {/* Custom Target Reticle overlay */}
         <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
            <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
               <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-xl -mt-1 -ml-1"></div>
@@ -201,13 +211,12 @@ export default function StudentScanner() {
       <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 shadow-lg">
         <span className="text-white text-xs font-bold">1x</span>
         <input 
-          type="range" min="1" max="5" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} 
+          type="range" min="1" max="5" step="0.1" value={zoom} onChange={handleZoom} 
           className="w-32 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[#2563eb]" 
         />
         <span className="text-white text-xs font-bold">5x</span>
       </div>
 
-      {/* Controls */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-10 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 bg-black/40 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg">
@@ -232,7 +241,6 @@ export default function StudentScanner() {
         </div>
       </div>
 
-      {/* Messages */}
       {message && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] bg-black/80 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/10 shadow-2xl w-auto max-w-[80vw] flex items-center justify-center pointer-events-none">
           <p className="text-white font-bold text-sm text-center leading-snug whitespace-pre-wrap">{message}</p>
