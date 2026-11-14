@@ -40,6 +40,22 @@ router.post('/start', protect, instructorOnly, (req, res) => {
   res.status(200).json({ message: 'Session started', token, expiresAt });
 });
 
+// Securely rotate the QR token and extend the expiration timer
+router.post('/rotate', protect, instructorOnly, (req, res) => {
+  const { classId, qrDuration } = req.body;
+  const session = global.activeSessions[classId];
+
+  if (!session) return res.status(400).json({ message: 'No active session found.' });
+
+  const durationMs = (qrDuration || 30) * 1000;
+  
+  // Generate a brand new token and extend the session life
+  session.currentToken = crypto.randomBytes(16).toString('hex');
+  session.expiresAt = Date.now() + durationMs;
+
+  res.status(200).json({ token: session.currentToken, expiresAt: session.expiresAt });
+});
+
 // Mark Attendance (With Mercy Overwrite for Current Day)
 router.post('/mark', protect, async (req, res) => {
   const { classId, scannedToken } = req.body;

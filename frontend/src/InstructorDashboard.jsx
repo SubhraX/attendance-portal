@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import QRCode from 'react-qr-code';
-import FacultyRecords from './FacultyRecords'; // <-- Imported the new component
+import FacultyRecords from './FacultyRecords'; 
 
 export default function InstructorDashboard() {
   const [activeTab, setActiveTab] = useState('generate'); 
@@ -11,6 +11,9 @@ export default function InstructorDashboard() {
   const [classId, setClassId] = useState('CS101'); 
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [attendedStudents, setAttendedStudents] = useState([]);
+
+  // Refs to manage clean up and prevent Zombie sockets
+  const socketRef = useRef(null);
 
   const startSession = async () => {
     if (!classId.trim()) return alert("Please enter a Target Class.");
@@ -23,18 +26,26 @@ export default function InstructorDashboard() {
     });
     
     if(res.ok) {
+      const data = await res.json();
+      setToken(data.token); // Grab initial token from HTTP response safely
+      setTimeLeft(qrDuration);
       setIsSessionActive(true);
       setAttendedStudents([]); 
       
+      // Instantly kill any old zombie socket connections
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+      
+      // Open fresh socket purely for live attendee updates (Not token rotation)
       const socket = new WebSocket('wss://attendance-portal-p2lp.onrender.com');
-      socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId: classId.trim(), duration: qrDuration }));
+      socketRef.current = socket;
+      
+      socket.onopen = () => socket.send(JSON.stringify({ action: 'registerFaculty', classId: classId.trim() }));
       socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'NEW_QR_TOKEN') {
-          setToken(data.token);
-          setTimeLeft(qrDuration); 
-        } else if (data.type === 'STUDENT_MARKED') {
-          setAttendedStudents(prev => [...prev, data.student]);
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'STUDENT_MARKED') {
+          setAttendedStudents(prev => [...prev, msg.student]);
         }
       };
     } else {
@@ -42,7 +53,31 @@ export default function InstructorDashboard() {
     }
   };
 
+  const rotateQRToken = async () => {
+    const authToken = localStorage.getItem('token');
+    try {
+      const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/rotate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ classId: classId.trim(), qrDuration })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.token);
+        setTimeLeft(qrDuration); // Reset timer cleanly
+      }
+    } catch (error) {
+      console.error("Rotation failed", error);
+    }
+  };
+
   const stopSession = async () => {
+    // Safely close the WebSocket to prevent memory leaks
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+
     const authToken = localStorage.getItem('token');
     await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/stop', {
       method: 'POST',
@@ -80,12 +115,18 @@ export default function InstructorDashboard() {
     }
   };
 
+  // The Master Clock: Handles countdown and securely triggers rotation at 0
   useEffect(() => {
+    if (!isSessionActive) return;
+
     if (timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
+    } else if (timeLeft === 0) {
+      rotateQRToken();
     }
-  }, [timeLeft]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, isSessionActive]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -249,7 +290,6 @@ export default function InstructorDashboard() {
             
           </div>
         ) : (
-          /* Render the newly built FacultyRecords component here */
           <FacultyRecords />
         )}
       </div>
