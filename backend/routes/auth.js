@@ -21,7 +21,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user and issue JWT
+// Login user
 router.post('/login', async (req, res) => {
   try {
     const { email, password, deviceId } = req.body;
@@ -32,19 +32,15 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    // DEVICE LOCK LOGIC (Only enforced on students)
     if (user.role === 'student') {
       if (user.deviceId && user.deviceId !== deviceId) {
         return res.status(403).json({ message: 'Account is securely locked to another device.' });
       }
-      
-      // Use updateOne instead of user.save() to bypass the pre-save password hook
       if (!user.deviceId && deviceId) {
         await User.updateOne({ _id: user._id }, { $set: { deviceId: deviceId } });
       }
     }
 
-    // Generate JWT token valid for 1 year (365 days)
     const token = jwt.sign(
       { id: user._id, role: user.role }, 
       process.env.JWT_SECRET, 
@@ -53,8 +49,18 @@ router.post('/login', async (req, res) => {
 
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
-    console.error("Login Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// NEW: Logout User & Unlock Device
+router.post('/logout', protect, async (req, res) => {
+  try {
+    // Free up the device lock so they can log in from a new device later
+    await User.updateOne({ _id: req.user._id }, { $set: { deviceId: null } });
+    res.status(200).json({ message: 'Logged out successfully and device unlocked' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error during logout', error: error.message });
   }
 });
 
@@ -65,7 +71,7 @@ router.post('/reset-device', protect, instructorOnly, async (req, res) => {
     if (!studentId) return res.status(400).json({ message: 'Student ID is required' });
 
     await User.updateOne({ _id: studentId }, { $set: { deviceId: null } });
-    res.status(200).json({ message: 'Device lock removed successfully. The student can now log in on a new device.' });
+    res.status(200).json({ message: 'Device lock removed successfully.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -74,7 +80,6 @@ router.post('/reset-device', protect, instructorOnly, async (req, res) => {
 // Get all Students (Faculty Only)
 router.get('/students', protect, instructorOnly, async (req, res) => {
   try {
-    // Only fetch users with the 'student' role, exclude passwords
     const students = await User.find({ role: 'student' }).select('-password');
     res.status(200).json(students);
   } catch (error) {
@@ -88,7 +93,6 @@ router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
     const studentId = req.params.id;
     await User.findByIdAndDelete(studentId);
     
-    // Also cascade delete all their attendance records
     const Attendance = require('../models/Attendance');
     await Attendance.deleteMany({ student: studentId });
     
@@ -109,7 +113,7 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
     if (name) student.name = name;
     if (email) student.email = email;
     if (stream) student.stream = stream;
-    if (password) student.password = password; // The pre-save hook will automatically hash the new password
+    if (password) student.password = password; 
     
     await student.save();
     res.status(200).json({ message: 'Student updated successfully' });
