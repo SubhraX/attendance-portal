@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import QRCode from 'react-qr-code';
 import FacultyRecords from './FacultyRecords'; 
 import { useTheme } from './ThemeContext';
 
 export default function InstructorDashboard() {
   const { isDarkMode, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('records'); 
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // NEW: Sidebar Toggle State
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); 
   
   const [token, setToken] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -106,6 +108,11 @@ export default function InstructorDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isSessionActive]);
 
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -123,10 +130,8 @@ export default function InstructorDashboard() {
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
       
-      {/* Sidebar Navigation - NOW RETRACTABLE */}
       <div className={`border-r flex flex-col p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-24 items-center'} ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
         
-        {/* Upper Left Logo & Title - Click to Toggle */}
         <div 
           onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
           className={`flex items-center mb-10 pb-6 border-b cursor-pointer group w-full ${isSidebarExpanded ? 'gap-3' : 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
@@ -149,7 +154,6 @@ export default function InstructorDashboard() {
           )}
         </div>
 
-        {/* Sidebar Buttons */}
         <div className={`flex flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'}`}>
           <button 
             onClick={() => setActiveTab('generate')} 
@@ -170,7 +174,6 @@ export default function InstructorDashboard() {
           </button>
         </div>
 
-        {/* Theme Toggle Button */}
         <div className={`mt-auto pt-6 border-t w-full flex ${!isSidebarExpanded && 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
           <button
             onClick={toggleTheme}
@@ -192,16 +195,27 @@ export default function InstructorDashboard() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area with Log Out Button */}
       <div className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto z-10 relative transition-all duration-300">
-        <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-4">
+        
+        {/* LOG OUT BUTTON (Upper Right) */}
+        <div className="absolute top-6 right-6 md:top-10 md:right-10 z-50">
+          <button 
+            onClick={handleLogout}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border shadow-sm active:scale-95 ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            Log out
+          </button>
+        </div>
+
+        <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-10 md:mt-4">
           
           {activeTab === 'generate' ? (
             <div className={`w-full mx-auto flex flex-col lg:flex-row gap-8 ${isSessionActive ? 'items-stretch' : 'items-center justify-center h-full'}`}>
               
               <div className={`flex-1 flex flex-col ${!isSessionActive ? 'max-w-md w-full' : 'items-center justify-center'}`}>
                 {!isSessionActive ? (
-                  /* Session Controls Glass Card */
                   <div className={`flex flex-col p-8 rounded-3xl border shadow-2xl backdrop-blur-xl animate-fade-in-up w-full gap-6 ${glassPanel}`}>
                     <h2 className={`text-2xl font-bold tracking-wide border-b pb-4 ${isDarkMode ? 'text-white border-white/10' : 'text-orange-950 border-orange-200/50'}`}>Generate QR Session</h2>
                     
@@ -254,7 +268,6 @@ export default function InstructorDashboard() {
                     </button>
                   </div>
                 ) : (
-                  /* Active QR Projection */
                   <div className={`text-center p-10 md:p-14 rounded-3xl shadow-2xl backdrop-blur-xl w-full max-w-2xl transform transition-all animate-fade-in-up flex flex-col items-center border ${glassPanel}`}>
                     <div className={`px-6 py-2 rounded-full border mb-8 inline-flex items-center gap-3 ${isDarkMode ? 'bg-black/40 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
                       <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -290,7 +303,6 @@ export default function InstructorDashboard() {
                 )}
               </div>
 
-              {/* Live Attendance Panel */}
               {isSessionActive && (
                 <div className={`w-full lg:w-80 border rounded-3xl flex flex-col overflow-hidden shadow-2xl backdrop-blur-xl animate-fade-in-up ${glassPanel}`}>
                   <div className={`border-b px-6 py-5 flex items-center justify-between ${isDarkMode ? 'bg-black/40 border-white/10' : 'bg-white/40 border-orange-200/50'}`}>

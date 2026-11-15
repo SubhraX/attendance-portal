@@ -9,7 +9,6 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState('scan'); 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   
-  // Student Data & Stats State
   const [studentInfo, setStudentInfo] = useState({ name: 'Student', email: '' });
   const [attendanceData, setAttendanceData] = useState({});
   const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -19,7 +18,6 @@ export default function StudentDashboard() {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   useEffect(() => {
-    // Load student info from localStorage (assuming auth.js saved it here on login)
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setStudentInfo(JSON.parse(storedUser));
@@ -37,7 +35,6 @@ export default function StudentDashboard() {
     setIsLoadingStats(true);
     try {
       const token = localStorage.getItem('token');
-      // Ensure you create this route in your backend to return the logged-in student's records!
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/my-records', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -68,7 +65,11 @@ export default function StudentDashboard() {
     setCalMonth(newMonth); setCalYear(newYear);
   };
 
-  // View-Only Calendar Rendering
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
   const renderCalendar = () => {
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const firstDay = new Date(calYear, calMonth, 1).getDay();
@@ -109,10 +110,8 @@ export default function StudentDashboard() {
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
       
-      {/* Sidebar Navigation */}
       <div className={`border-r flex flex-col p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-24 items-center'} ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
         
-        {/* Upper Left Logo & Title - Click to Toggle */}
         <div 
           onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
           className={`flex items-center mb-10 pb-6 border-b cursor-pointer group w-full ${isSidebarExpanded ? 'gap-3' : 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
@@ -135,7 +134,6 @@ export default function StudentDashboard() {
           )}
         </div>
 
-        {/* Sidebar Buttons */}
         <div className={`flex flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'}`}>
           <button 
             onClick={() => setActiveTab('scan')} 
@@ -156,7 +154,6 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        {/* Theme Toggle Button */}
         <div className={`mt-auto pt-6 border-t w-full flex ${!isSidebarExpanded && 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
           <button
             onClick={toggleTheme}
@@ -178,13 +175,24 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area with Log Out Button */}
       <div className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto z-10 relative transition-all duration-300">
-        <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-4">
+        
+        {/* LOG OUT BUTTON (Upper Right) */}
+        <div className="absolute top-6 right-6 md:top-10 md:right-10 z-50">
+          <button 
+            onClick={handleLogout}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border shadow-sm active:scale-95 ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            Log out
+          </button>
+        </div>
+
+        <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-10 md:mt-4">
           
           {activeTab === 'scan' ? (
             <div className="w-full mx-auto flex items-center justify-center h-full">
-              {/* Scan Launch Glass Card */}
               <div className={`flex flex-col items-center justify-center p-10 md:p-14 rounded-3xl border shadow-2xl backdrop-blur-xl animate-fade-in-up w-full max-w-lg text-center ${glassPanel}`}>
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-8 border ${isDarkMode ? 'bg-black/40 border-orange-500/30' : 'bg-orange-50 border-orange-200'}`}>
                   <svg className={`w-12 h-12 ${isDarkMode ? 'text-orange-500' : 'text-orange-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
@@ -206,10 +214,8 @@ export default function StudentDashboard() {
             </div>
           ) : (
             <div className="w-full flex flex-col h-full relative z-10 max-w-4xl mx-auto">
-              {/* Stats View Glass Card */}
               <div className={`flex flex-col p-8 md:p-10 rounded-3xl border shadow-2xl backdrop-blur-xl animate-fade-in-up w-full ${glassPanel}`}>
                 
-                {/* Header */}
                 <div className={`border-b pb-8 mb-8 flex items-start gap-5 ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
                   <div className="w-20 h-20 rounded-full bg-slate-400 overflow-hidden shrink-0 border-2 border-transparent shadow-lg">
                     <img src={`https://ui-avatars.com/api/?name=${studentInfo.name}&background=ea580c&color=fff&font-size=0.4`} alt="Avatar" className="w-full h-full object-cover" />
@@ -222,8 +228,6 @@ export default function StudentDashboard() {
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-10">
-                  
-                  {/* Left Column Stats */}
                   <div className="w-full md:w-1/3 flex flex-col gap-8">
                     <div>
                       <p className={`text-xs uppercase tracking-wider font-bold mb-2 ${isDarkMode ? 'text-emerald-500/70' : 'text-emerald-600/70'}`}>Total Present</p>
@@ -243,7 +247,6 @@ export default function StudentDashboard() {
                     </div>
                   </div>
 
-                  {/* Right Column Calendar (Non-Interactive) */}
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-6">
                       <button onClick={() => shiftMonth(-1)} className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-white/5' : 'text-orange-900/40 hover:text-orange-950 hover:bg-orange-900/5'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
