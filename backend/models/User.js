@@ -8,13 +8,15 @@ const userSchema = mongoose.Schema({
   role: { type: String, enum: ['student', 'instructor'], default: 'student' },
   // Used to prevent a student from logging in on multiple devices to proxy attendance
   deviceId: { type: String, default: null }, 
-  // ADDED: Stream tracking
   stream: { type: String, default: 'Unassigned' }
 }, { timestamps: true });
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+// FIX: Removed the 'next' parameter completely. Async Mongoose hooks automatically 
+// proceed when the promise resolves. Mixing them causes a fatal 500 crash.
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

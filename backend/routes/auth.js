@@ -53,10 +53,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// NEW: Logout User & Unlock Device
+// Logout User & Unlock Device
 router.post('/logout', protect, async (req, res) => {
   try {
-    // Free up the device lock so they can log in from a new device later
     await User.updateOne({ _id: req.user._id }, { $set: { deviceId: null } });
     res.status(200).json({ message: 'Logged out successfully and device unlocked' });
   } catch (error) {
@@ -113,11 +112,19 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
     if (name) student.name = name;
     if (email) student.email = email;
     if (stream) student.stream = stream;
-    if (password) student.password = password; 
+    
+    // FIX: Guarantee that only genuine new strings overwrite the password
+    if (password && password.trim().length > 0) {
+      student.password = password.trim(); 
+    }
     
     await student.save();
     res.status(200).json({ message: 'Student updated successfully' });
   } catch (error) {
+    // FIX: Gracefully catch MongoDB duplicate key errors if you accidentally assign an existing email
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists in the system.' });
+    }
     res.status(500).json({ message: 'Server error updating student', error: error.message });
   }
 });
