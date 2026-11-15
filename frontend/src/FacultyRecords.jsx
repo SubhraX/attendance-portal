@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import RegisterStudentModal from './RegisterStudentModal';
 import StudentDetailsModal from './StudentDetailsModal';
+import { useTheme } from './ThemeContext';
 
 export default function FacultyRecords() {
+  const { isDarkMode } = useTheme();
+  
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-
   const [showRegModal, setShowRegModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -23,9 +25,7 @@ export default function FacultyRecords() {
       });
       const data = await res.json();
       if (res.ok) setStudents(data);
-    } catch (error) {
-      console.error("Failed to fetch students", error);
-    }
+    } catch (error) {}
     setLoading(false);
   };
 
@@ -38,10 +38,10 @@ export default function FacultyRecords() {
     <div className="w-full max-w-6xl mx-auto flex flex-col h-full relative">
 
       {/* Header & Controls */}
-      <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center mb-8 gap-4 bg-[#151b2b] p-6 rounded-2xl border border-[#1e293b] shadow-lg">
+      <div className={`flex flex-col lg:flex-row justify-between items-end lg:items-center mb-8 gap-4 p-6 rounded-2xl border shadow-lg ${isDarkMode ? 'bg-[#151b2b] border-[#1e293b]' : 'bg-white border-orange-200'}`}>
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-wide">Student Directory</h2>
-          <p className="text-gray-400 text-sm mt-1">Manage enrollments and view visual attendance</p>
+          <h2 className={`text-2xl font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
+          <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60 font-medium'}`}>Manage enrollments and view visual attendance</p>
         </div>
         <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-4">
           <button
@@ -52,13 +52,13 @@ export default function FacultyRecords() {
             Register Student
           </button>
           <div className="relative w-full sm:w-72">
-            <svg className="w-5 h-5 absolute left-3 top-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <svg className={`w-5 h-5 absolute left-3 top-3 ${isDarkMode ? 'text-gray-500' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input
               type="text"
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-orange-500 transition-colors"
+              className={`w-full rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-orange-500 transition-colors ${isDarkMode ? 'bg-[#0b0f19] border-[#1e293b] text-white border' : 'bg-[#fffaf0] border border-orange-200 text-orange-950 font-medium placeholder-orange-900/40 focus:ring-2 focus:ring-orange-500/20'}`}
             />
           </div>
         </div>
@@ -66,29 +66,29 @@ export default function FacultyRecords() {
 
       {/* Grid of Student Cards */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center text-gray-500">Loading student directory...</div>
+        <div className={`flex-1 flex items-center justify-center font-bold ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Loading student directory...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in-up pb-10">
           {filteredStudents.length === 0 ? (
-            <div className="col-span-full text-center py-10 text-gray-500 border border-dashed border-gray-700 rounded-2xl">No students found.</div>
+            <div className={`col-span-full text-center py-10 border border-dashed rounded-2xl ${isDarkMode ? 'text-gray-500 border-gray-700' : 'text-orange-900/50 font-medium border-orange-200'}`}>No students found.</div>
           ) : (
             filteredStudents.map(student => (
               <div
                 key={student._id}
                 onClick={() => setSelectedStudent(student)}
-                className="bg-[#151b2b] border border-[#1e293b] rounded-2xl p-5 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(234,88,12,0.1)] cursor-pointer transition-all group relative overflow-hidden flex flex-col"
+                className={`border rounded-2xl p-5 cursor-pointer transition-all group relative overflow-hidden flex flex-col ${isDarkMode ? 'bg-[#151b2b] border-[#1e293b] hover:border-orange-500 hover:shadow-[0_0_20px_rgba(234,88,12,0.1)]' : 'bg-white border-orange-200 hover:border-orange-400 hover:shadow-lg'}`}
               >
-                <div className={`absolute top-0 right-0 w-2 h-full ${student.deviceId ? 'bg-emerald-500/50' : 'bg-orange-500/50'}`}></div>
-                <div className="w-12 h-12 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                <div className={`absolute top-0 right-0 w-2 h-full ${student.deviceId ? isDarkMode ? 'bg-emerald-500/50' : 'bg-emerald-500/80' : isDarkMode ? 'bg-orange-500/50' : 'bg-orange-400/80'}`}></div>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform ${isDarkMode ? 'bg-orange-500/20 text-orange-500' : 'bg-orange-100 text-orange-700'}`}>
                   {student.name.charAt(0).toUpperCase()}
                 </div>
-                <h3 className="text-white font-bold text-lg truncate">{student.name}</h3>
-                <p className="text-gray-400 text-xs truncate mb-4">{student.email}</p>
+                <h3 className={`font-bold text-lg truncate ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{student.name}</h3>
+                <p className={`text-xs truncate mb-4 ${isDarkMode ? 'text-gray-400' : 'text-orange-700/80 font-medium'}`}>{student.email}</p>
                 <div className="mt-auto flex items-center gap-2 text-xs font-medium">
                   {student.deviceId ? (
-                    <span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Device Locked</span>
+                    <span className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${isDarkMode ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Device Locked</span>
                   ) : (
-                    <span className="bg-orange-500/10 text-orange-400 px-2.5 py-1 rounded-md border border-orange-500/20 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Unlocked</span>
+                    <span className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${isDarkMode ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-orange-50 text-orange-700 border-orange-200'}`}><span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Unlocked</span>
                   )}
                 </div>
               </div>
@@ -98,20 +98,11 @@ export default function FacultyRecords() {
       )}
 
       {showRegModal && (
-        <RegisterStudentModal 
-          onClose={() => setShowRegModal(false)} 
-          onSuccess={fetchStudents} 
-        />
+        <RegisterStudentModal onClose={() => setShowRegModal(false)} onSuccess={fetchStudents} />
       )}
-
       {selectedStudent && (
-        <StudentDetailsModal 
-          student={selectedStudent} 
-          onClose={() => setSelectedStudent(null)} 
-          onUpdate={fetchStudents} 
-        />
+        <StudentDetailsModal student={selectedStudent} onClose={() => setSelectedStudent(null)} onUpdate={fetchStudents} />
       )}
-
     </div>
   );
 }
