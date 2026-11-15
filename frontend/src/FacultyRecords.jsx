@@ -60,7 +60,7 @@ export default function FacultyRecords() {
       <div className={`flex flex-col xl:flex-row justify-between items-end xl:items-center mb-10 gap-6 p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${glassPanel}`}>
         <div>
           <h2 className={`text-3xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
-          <p className={`text-sm mt-1 font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>Perfectly balance functionality with school spirit.</p>
+          <p className={`text-sm mt-1 font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>Detailed information about all enrolled students.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-4 items-center">
