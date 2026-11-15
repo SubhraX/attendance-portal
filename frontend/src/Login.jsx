@@ -90,11 +90,11 @@ export default function Login() {
         {/* Subtle dark overlay to make the pure white light-mode glass pop */}
         <div className="absolute inset-0 bg-black/20"></div>
 
-        {/* Clean, pure white light-mode glass container */}
-        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl bg-transparent border border-white">
+        {/* Semi-transparent Frosted Glass Container */}
+        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-lg bg-white/40 border border-white/60">
           
           {/* Left Side */}
-          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-100 bg-transparent">
+          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-white/50 bg-white/20">
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-10 text-center xl:text-left">
               <img 
                 src="/BITS_logo.png" 
@@ -102,23 +102,23 @@ export default function Login() {
                 className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0 drop-shadow-sm"
               />
               <div className="flex flex-col justify-center pt-1">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-orange-950 mb-1 uppercase tracking-tight leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-orange-950 mb-1 uppercase tracking-tight leading-tight drop-shadow-sm">
                   Birla Institute of <span className="inline-block whitespace-nowrap">Technology, Mesra</span>
                 </h1>
-                <h2 className="text-sm sm:text-base font-bold text-orange-600 uppercase tracking-wider">University ERP System</h2>
+                <h2 className="text-sm sm:text-base font-bold text-orange-700 uppercase tracking-wider">University ERP System</h2>
               </div>
             </div>
             
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-200 pb-1 inline-block">Institute Vision</h3>
-              <p className="text-orange-950/70 text-sm font-medium leading-relaxed">
+              <h3 className="text-sm font-bold text-orange-950 mb-2 uppercase tracking-wide border-b border-orange-950/20 pb-1 inline-block">Institute Vision</h3>
+              <p className="text-orange-950/80 text-sm font-medium leading-relaxed font-semibold">
                 To become a globally recognized academic institution in consonance with the social, economic and ecological environment, striving continuously for excellence in education, research and technological service to the national needs.
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-200 pb-1 inline-block">Institute Mission</h3>
-              <ul className="list-decimal list-inside text-orange-950/70 text-sm font-medium leading-relaxed space-y-1">
+              <h3 className="text-sm font-bold text-orange-950 mb-2 uppercase tracking-wide border-b border-orange-950/20 pb-1 inline-block">Institute Mission</h3>
+              <ul className="list-decimal list-inside text-orange-950/80 text-sm font-medium leading-relaxed space-y-1 font-semibold">
                 <li>To educate students at Undergraduate, Post Graduate, Doctoral, and Post Doctoral levels to perform challenging engineering and managerial jobs.</li>
                 <li>To provide excellent research and development facilities.</li>
                 <li>To develop effective teaching and learning skills.</li>
@@ -127,19 +127,19 @@ export default function Login() {
           </div>
 
           {/* Right Side - Interactive Portal */}
-          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-transparent">
+          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white/30">
             
             <div className="w-full max-w-[360px] mx-auto animate-fade-in-up">
               
               {/* Role Toggle Switch */}
-              <div className="flex w-full p-1 bg-white border border-orange-200 rounded-full mb-10 shadow-sm">
+              <div className="flex w-full p-1 bg-white/60 border border-white/50 backdrop-blur-md rounded-full mb-10 shadow-sm">
                 <button
                   type="button"
                   onClick={() => { setRole('student'); setStatus(''); }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                     role === 'student' 
                       ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]' 
-                      : 'bg-transparent text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
+                      : 'bg-transparent text-orange-950/70 hover:text-orange-950 hover:bg-white/50'
                   }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -156,7 +156,7 @@ export default function Login() {
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                     role === 'instructor' 
                       ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]' 
-                      : 'bg-transparent text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
+                      : 'bg-transparent text-orange-950/70 hover:text-orange-950 hover:bg-white/50'
                   }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -168,9 +168,9 @@ export default function Login() {
               
               <form onSubmit={handleLogin} className="flex flex-col gap-5">
                 
-                {/* Email Input with Prominent Orange Icon */}
+                {/* Email Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-600">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-700">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h4" />
@@ -179,15 +179,15 @@ export default function Login() {
                   <input 
                     type="text" 
                     placeholder="Enrollment Number / Email" 
-                    className="w-full bg-white border border-orange-200 text-orange-950 rounded-xl py-3.5 pl-14 pr-4 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-semibold placeholder-gray-400 text-sm shadow-sm" 
+                    className="w-full bg-white/70 backdrop-blur-sm border border-white text-orange-950 rounded-xl py-3.5 pl-14 pr-4 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder-gray-500 text-sm shadow-sm" 
                     onChange={e => setEmail(e.target.value)} 
                     required 
                   />
                 </div>
                 
-                {/* Password Input with Prominent Orange Icon */}
+                {/* Password Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-600">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-700">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
@@ -196,14 +196,14 @@ export default function Login() {
                   <input 
                     type={showPassword ? "text" : "password"}
                     placeholder="Password" 
-                    className="w-full bg-white border border-orange-200 text-orange-950 rounded-xl py-3.5 pl-14 pr-12 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-semibold placeholder-gray-400 text-sm shadow-sm" 
+                    className="w-full bg-white/70 backdrop-blur-sm border border-white text-orange-950 rounded-xl py-3.5 pl-14 pr-12 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder-gray-500 text-sm shadow-sm" 
                     onChange={e => setPassword(e.target.value)} 
                     required 
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-orange-400 hover:text-orange-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-orange-600 hover:text-orange-800 transition-colors"
                   >
                     {showPassword ? (
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -238,7 +238,7 @@ export default function Login() {
               </form>
               
               {status && (
-                <div className="mt-5 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm text-center font-bold shadow-sm">
+                <div className="mt-5 p-3 bg-red-50/90 backdrop-blur-md border border-red-200 text-red-600 rounded-xl text-sm text-center font-bold shadow-sm">
                   {status}
                 </div>
               )}
