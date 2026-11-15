@@ -110,7 +110,6 @@ export default function InstructorDashboard() {
     return `${m}:${s}`;
   };
 
-  // CORRECTED FILE EXTENSIONS (.png)
   const bgImage = isDarkMode ? "url('/BITS_Night.png')" : "url('/BITS.png')";
   const overlayClass = isDarkMode ? "bg-[#0b101a]/80 backdrop-blur-md" : "bg-[#fffaf0]/80 backdrop-blur-md";
   const glassPanel = isDarkMode ? "bg-[#161b26]/60 border-white/10" : "bg-white/60 border-orange-200/50";
@@ -183,8 +182,7 @@ export default function InstructorDashboard() {
 
       {/* Main Content Area - CENTERED FIX */}
       <div className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto z-10 relative">
-        <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full">
-          <h1 className={`text-3xl font-extrabold mb-8 tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Dashboard</h1>
+        <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-4">
           
           {activeTab === 'generate' ? (
             <div className={`w-full mx-auto flex flex-col lg:flex-row gap-8 ${isSessionActive ? 'items-stretch' : 'items-center justify-center h-full'}`}>

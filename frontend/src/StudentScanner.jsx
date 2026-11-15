@@ -9,6 +9,10 @@ export default function StudentScanner() {
   const [facingMode, setFacingMode] = useState('environment'); 
   const [isCapturing, setIsCapturing] = useState(false);
   
+  // Samsung Fix State
+  const [bestBackCameraId, setBestBackCameraId] = useState(null);
+  const [cameraResolved, setCameraResolved] = useState(false);
+  
   const isProcessingRef = useRef(false); 
   const navigate = useNavigate();
 
@@ -22,6 +26,49 @@ export default function StudentScanner() {
       return () => clearTimeout(timer);
     }
   }, [isMarked, navigate]);
+
+  // Samsung WebRTC Logical Camera Fix
+  useEffect(() => {
+    let isMounted = true;
+    const findOptimalCamera = async () => {
+      try {
+        // Briefly grab the camera to force the browser to unlock the device hardware labels
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        // Stop the temp stream instantly to free the hardware for the QR Scanner
+        stream.getTracks().forEach(track => track.stop());
+
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        const backCameras = videoDevices.filter(d => 
+          d.label.toLowerCase().includes('back') || 
+          d.label.toLowerCase().includes('environment') || 
+          d.label.toLowerCase().includes('rear')
+        );
+
+        if (backCameras.length > 0) {
+          // Filter out logical multi-cameras and ultra-wide lenses that lack flash support
+          let mainLens = backCameras.find(d => 
+            !d.label.toLowerCase().includes('logical') && 
+            !d.label.toLowerCase().includes('wide') && 
+            !d.label.toLowerCase().includes('depth') &&
+            d.label.includes('0') // The physical main camera is usually tagged as 0
+          );
+
+          if (!mainLens) mainLens = backCameras.find(d => !d.label.toLowerCase().includes('logical'));
+          
+          if (mainLens && isMounted) setBestBackCameraId(mainLens.deviceId);
+        }
+      } catch (err) {
+        console.warn("Could not optimize camera setup for this device:", err);
+      } finally {
+        if (isMounted) setCameraResolved(true);
+      }
+    };
+
+    findOptimalCamera();
+    return () => { isMounted = false; };
+  }, []);
 
   const processQRData = async (decodedText) => {
     if (isProcessingRef.current) return;
@@ -77,7 +124,6 @@ export default function StudentScanner() {
     }
   };
 
-  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting)
   const applyNativeConstraint = async (constraints) => {
     const video = document.querySelector('video');
     if (!video || !video.srcObject) return false;
@@ -86,18 +132,14 @@ export default function StudentScanner() {
     if (!track || typeof track.applyConstraints !== 'function') return false;
 
     try {
-      // 1. Force the constraint directly. 
-      // Modern Android Chrome requires torch to be inside the 'advanced' array.
       await track.applyConstraints({ advanced: [constraints] });
       return true;
     } catch (err) {
       try {
-        // 2. Fallback for iOS Safari which prefers direct application
         await track.applyConstraints(constraints);
         return true;
       } catch (fallbackErr) {
-        console.warn("Hardware rejected constraint:", fallbackErr);
-        return false; // Only fail if the hardware actively rejects both attempts
+        return false;
       }
     }
   };
@@ -140,8 +182,8 @@ export default function StudentScanner() {
     if (success) {
       setIsFlashOn(newState);
     } else {
-      setMessage('Flash is not supported on this browser/device.');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('Flash is not supported on this specific lens. Try flipping camera or switching devices.');
+      setTimeout(() => setMessage(''), 4000);
     }
   };
   
@@ -152,11 +194,14 @@ export default function StudentScanner() {
     setTimeout(() => setMessage(''), 500);
   };
 
-  const cameraConstraints = useMemo(() => ({
-    facingMode: facingMode,
-    width: { ideal: 1920 },
-    height: { ideal: 1080 }
-  }), [facingMode]);
+  const cameraConstraints = useMemo(() => {
+    // If we successfully found the primary Samsung lens, force the scanner to use it
+    if (facingMode === 'environment' && bestBackCameraId) {
+      return { deviceId: { exact: bestBackCameraId }, width: { ideal: 1920 }, height: { ideal: 1080 } };
+    }
+    // Standard fallback
+    return { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } };
+  }, [facingMode, bestBackCameraId]);
 
   if (isMarked) {
     return (
@@ -195,7 +240,8 @@ export default function StudentScanner() {
       `}</style>
 
       <div className="absolute left-0 w-full h-[135vh] -top-[25vh]">
-        {!isProcessingRef.current && !isMarked && (
+        {/* Only mount scanner once the hardware enumeration fix is complete */}
+        {cameraResolved && !isProcessingRef.current && !isMarked && (
           <Scanner 
             onScan={(result) => {
               if (result && result.length > 0) {
