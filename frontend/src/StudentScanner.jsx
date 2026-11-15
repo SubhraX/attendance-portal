@@ -70,7 +70,7 @@ export default function StudentScanner() {
         classId = qrData.classId;
         token = qrData.token;
       } catch {
-        setMessage(`Data integrity error.`);
+        setMessage(`Data integrity error. Format invalid.`);
         setTimeout(() => { setMessage(''); setIsCapturing(false); isProcessingRef.current = false; }, 3000);
         return;
       }
@@ -87,12 +87,12 @@ export default function StudentScanner() {
         setIsCapturing(false);
         setIsMarked(true);
       } else {
-        setMessage(`Error: ${data.message}`);
-        setTimeout(() => { setMessage(''); setIsCapturing(false); isProcessingRef.current = false; }, 2000);
+        setMessage(`Verification failed: ${data.message}`);
+        setTimeout(() => { setMessage(''); setIsCapturing(false); isProcessingRef.current = false; }, 3000);
       }
     } catch (err) {
-      setMessage('Network transmission failed.');
-      setTimeout(() => { setMessage(''); setIsCapturing(false); isProcessingRef.current = false; }, 2000);
+      setMessage('Network transmission failed. Check connection.');
+      setTimeout(() => { setMessage(''); setIsCapturing(false); isProcessingRef.current = false; }, 3000);
     }
   };
 
@@ -132,17 +132,20 @@ export default function StudentScanner() {
 
   const cameraConstraints = useMemo(() => {
     if (facingMode === 'environment' && bestBackCameraId) {
-      return { deviceId: { exact: bestBackCameraId }, width: { ideal: 1280 }, height: { ideal: 720 } };
+      return { deviceId: { exact: bestBackCameraId }, width: { ideal: 1920 }, height: { ideal: 1080 } };
     }
-    return { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } };
+    return { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } };
   }, [facingMode, bestBackCameraId]);
 
   if (isMarked) {
     return (
-      <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-50">
-        <div className="bg-white p-8 rounded-sm shadow-md text-center max-w-sm w-full border-t-4 border-green-600">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Record Verified</h2>
-          <p className="text-sm text-gray-600">Session logging successful. Redirecting...</p>
+      <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-50 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full flex flex-col items-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Record Verified</h2>
+          <p className="text-sm text-gray-500">Session logging successful. Redirecting...</p>
         </div>
       </div>
     );
@@ -151,14 +154,16 @@ export default function StudentScanner() {
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden font-sans">
       {/* App Bar */}
-      <div className="w-full bg-gray-900 text-white h-12 flex items-center justify-between px-4 z-50 border-b border-gray-700">
-        <button onClick={() => navigate('/')} className="text-sm hover:text-gray-300">Close</button>
-        <h1 className="text-sm font-semibold uppercase tracking-wide text-gray-200">Terminal Scanner</h1>
+      <div className="w-full bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 text-white h-20 flex items-center justify-between px-6 z-50 pt-safe">
+        <button onClick={() => navigate('/')} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-md">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        </button>
+        <h1 className="text-sm font-semibold uppercase tracking-widest text-white drop-shadow-md">Scanner</h1>
         <div className="w-10"></div> 
       </div>
 
       {/* Viewfinder */}
-      <div className="flex-1 relative flex items-center justify-center">
+      <div className="flex-1 relative flex items-center justify-center bg-black">
         {cameraResolved && !isProcessingRef.current && !isMarked && (
           <Scanner 
             onScan={(result) => { if (result && result.length > 0) processQRData(result[0].rawValue); }}
@@ -170,26 +175,40 @@ export default function StudentScanner() {
         )}
         
         {/* Reticle overlay */}
-        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.7)]">
-           <div className="w-64 h-64 border border-gray-500 relative"></div>
+        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+           <div className="w-64 h-64 border-2 border-white/40 rounded-2xl relative">
+              {/* Corner Accents */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-orange-500 rounded-tl-xl -ml-0.5 -mt-0.5"></div>
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-orange-500 rounded-tr-xl -mr-0.5 -mt-0.5"></div>
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-orange-500 rounded-bl-xl -ml-0.5 -mb-0.5"></div>
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-orange-500 rounded-br-xl -mr-0.5 -mb-0.5"></div>
+           </div>
         </div>
 
-        {isCapturing && <div className="absolute inset-0 bg-white z-40 opacity-50 pointer-events-none"></div>}
+        {isCapturing && <div className="absolute inset-0 bg-white z-40 opacity-50 pointer-events-none transition-opacity duration-200"></div>}
       </div>
 
-      {/* Toolbar */}
-      <div className="w-full bg-gray-900 text-white h-16 flex items-center justify-center gap-8 z-50 border-t border-gray-700">
-        <button onClick={toggleFlash} className={`px-4 py-1.5 text-xs rounded-sm border ${isFlashOn ? 'bg-white text-black border-white' : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'}`}>
-          Toggle Flash
+      {/* Floating Toolbar */}
+      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-8 z-50 bg-black/40 backdrop-blur-md px-6 py-4 rounded-full border border-white/10">
+        <button onClick={toggleFlash} className={`flex flex-col items-center gap-1 transition-transform active:scale-95 ${isFlashOn ? 'text-orange-500' : 'text-white'}`}>
+          <div className={`p-3 rounded-full ${isFlashOn ? 'bg-orange-500/20' : 'bg-white/10'}`}>
+            <svg className="w-6 h-6" fill={isFlashOn ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider">Flash</span>
         </button>
-        <button onClick={flipCamera} className="px-4 py-1.5 text-xs rounded-sm border bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700">
-          Switch Camera
+        <button onClick={flipCamera} className="flex flex-col items-center gap-1 transition-transform active:scale-95 text-white">
+          <div className="p-3 rounded-full bg-white/10">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider">Flip</span>
         </button>
       </div>
 
+      {/* Error Toast */}
       {message && (
-        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-[100] bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-sm w-[90%] max-w-sm text-center">
-          <p className="text-xs font-semibold">{message}</p>
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-[100] bg-red-600/90 backdrop-blur-md text-white px-5 py-3 rounded-xl shadow-xl w-[90%] max-w-sm flex items-center gap-3">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          <p className="text-sm font-semibold">{message}</p>
         </div>
       )}
     </div>
