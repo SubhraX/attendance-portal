@@ -118,13 +118,13 @@ export default function StudentDashboard() {
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
       
-      {/* HEADER / SIDEBAR */}
-      <div className={`md:border-r border-b flex flex-row md:flex-col p-4 md:p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out w-full md:w-auto ${isSidebarExpanded ? 'md:w-64' : 'md:w-24 md:items-center'} justify-between md:justify-start ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
+      {/* HEADER / SIDEBAR - Animation Classes Restored */}
+      <div className={`md:border-r border-b flex flex-row md:flex-col p-4 md:p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out w-full ${isSidebarExpanded ? 'md:w-64' : 'md:w-24 md:items-center'} justify-between md:justify-start ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
         
         {/* Logo & Title */}
         <div 
           onClick={() => { if(window.innerWidth >= 768) setIsSidebarExpanded(!isSidebarExpanded) }}
-          className={`flex items-center md:mb-10 md:pb-6 md:border-b cursor-pointer group shrink-0 ${isSidebarExpanded ? 'gap-3' : 'gap-3 md:justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
+          className={`flex items-center md:mb-10 md:pb-6 md:border-b cursor-pointer group shrink-0 transition-all duration-300 ${isSidebarExpanded ? 'gap-3' : 'gap-3 md:justify-center w-full'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
           title="Toggle Sidebar"
         >
           <img 
@@ -132,7 +132,7 @@ export default function StudentDashboard() {
             alt="BIT Mesra" 
             className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md bg-white/10 rounded-full p-1 shrink-0 group-hover:scale-110 transition-transform"
           />
-          <div className={`flex flex-col animate-fade-in-up ${!isSidebarExpanded ? 'hidden md:hidden' : 'flex'}`}>
+          <div className={`flex-col animate-fade-in-up ${!isSidebarExpanded ? 'flex md:hidden' : 'flex'}`}>
             <h2 className={`text-lg font-extrabold tracking-wide uppercase leading-tight whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>
               BIT Mesra
             </h2>
@@ -153,13 +153,13 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        {/* DESKTOP ONLY: Sidebar Tabs */}
+        {/* DESKTOP ONLY: Sidebar Tabs (Animations perfectly restored) */}
         <div className={`hidden md:flex flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'}`}>
-          <button onClick={() => setActiveTab('scan')} className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'scan' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}>
+          <button onClick={() => setActiveTab('scan')} className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${activeTab === 'scan' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
             {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Scan QR</span>}
           </button>
-          <button onClick={() => setActiveTab('stats')} className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'stats' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}>
+          <button onClick={() => setActiveTab('stats')} className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${activeTab === 'stats' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">My Stats</span>}
           </button>
@@ -167,12 +167,12 @@ export default function StudentDashboard() {
 
         {/* DESKTOP ONLY: Theme & Logout (Bottom) */}
         <div className={`hidden md:flex mt-auto pt-6 border-t flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
-          <button onClick={toggleTheme} className={`p-3 rounded-xl font-semibold transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300 hover:bg-white/5' : 'bg-white/50 border-orange-200 text-orange-900 hover:bg-orange-50'}`}>
+          <button onClick={toggleTheme} className={`py-3 rounded-xl font-semibold transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300 hover:bg-white/5' : 'bg-white/50 border-orange-200 text-orange-900 hover:bg-orange-50'}`}>
             {isDarkMode ? <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
             : <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
             {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Theme</span>}
           </button>
-          <button onClick={handleLogout} className={`p-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-red-50 text-red-600 border-red-200'}`}>
+          <button onClick={handleLogout} className={`py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-red-50 text-red-600 border-red-200'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Log Out</span>}
           </button>
