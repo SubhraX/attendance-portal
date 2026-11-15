@@ -70,8 +70,8 @@ export default function FacultyRecords() {
   return (
     <div className="w-full flex flex-col h-full relative z-10">
       
-      {/* COMPACT HEADER */}
-      <div className={`flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 p-5 md:p-6 rounded-2xl border shadow-xl backdrop-blur-xl ${glassPanel}`}>
+      {/* COMPACT HEADER - Added 'relative z-50' to fix dropdown overlap glitch */}
+      <div className={`relative z-50 flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 p-5 md:p-6 rounded-2xl border shadow-xl backdrop-blur-xl ${glassPanel}`}>
         <div>
           <h2 className={`text-xl md:text-2xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
           <p className={`text-xs mt-0.5 font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>Information for all enrolled students.</p>
@@ -100,7 +100,7 @@ export default function FacultyRecords() {
                   : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
               } ${isDarkMode ? 'bg-[#1a2130]/95 border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white/95 border-orange-200 shadow-[0_10px_40px_rgba(234,88,12,0.15)]'}`}
             >
-              <div className="max-h-56 overflow-y-auto py-1.5 flex flex-col">
+              <div className="max-h-56 overflow-y-auto py-1.5 flex flex-col scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent">
                 <div
                   onClick={() => { setSelectedStream('All Streams'); setIsDropdownOpen(false); }}
                   className={`px-4 py-2.5 cursor-pointer font-bold text-xs transition-colors mx-1.5 rounded-lg ${
@@ -161,7 +161,6 @@ export default function FacultyRecords() {
                 onClick={() => setSelectedStudent(student)}
                 className={`border rounded-2xl p-4 cursor-pointer transition-all group relative overflow-hidden flex flex-col shadow-lg backdrop-blur-md ${isDarkMode ? 'bg-[#11161d]/80 border-white/10 hover:border-orange-500/50 hover:bg-[#1a2130]/90' : 'bg-white/80 border-orange-200/50 hover:border-orange-400 hover:bg-white/95'}`}
               >
-                {/* COMPACT STUDENT CARDS */}
                 <div className={`absolute top-0 right-0 w-2 h-full transition-colors ${student.deviceId ? 'bg-emerald-500/80 group-hover:bg-emerald-500' : 'bg-orange-500/80 group-hover:bg-orange-500'}`}></div>
                 
                 <p className={`text-[10px] font-bold mb-1 uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Student {idx + 1}</p>

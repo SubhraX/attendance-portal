@@ -70,9 +70,9 @@ export default function Login() {
   return (
     <>
       {showSplash && (
-        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#fffaf0] transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
           <div className="relative flex items-center justify-center">
-            <div className="absolute w-40 h-40 border-[4px] border-orange-100 border-t-[#9b1c1c] border-b-[#9b1c1c] rounded-full animate-spin"></div>
+            <div className="absolute w-40 h-40 border-[4px] border-orange-100 border-t-orange-600 border-b-orange-600 rounded-full animate-spin"></div>
             <img 
               src="/BITS_logo.png" 
               alt="BITS Mesra Logo" 
@@ -87,37 +87,38 @@ export default function Login() {
         className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url('/BITS.png')` }}
       >
-        {/* Restored the previous dark blur overlay */}
-        <div className="absolute inset-0 bg-black/30"></div>
+        {/* Subtle dark overlay to make the pure white light-mode glass pop */}
+        <div className="absolute inset-0 bg-black/20"></div>
 
-        {/* Restored premium glass container */}
-        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md bg-[#fffaf0]/80 border border-orange-100/50">
+        {/* Clean, pure white light-mode glass container */}
+        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl bg-white/90 border border-white">
           
-          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-200/50">
+          {/* Left Side */}
+          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-100 bg-white/50">
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-10 text-center xl:text-left">
               <img 
                 src="/BITS_logo.png" 
                 alt="BITS Mesra Logo" 
-                className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0 drop-shadow-md"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0 drop-shadow-sm"
               />
               <div className="flex flex-col justify-center pt-1">
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-orange-950 mb-1 uppercase tracking-tight leading-tight">
                   Birla Institute of <span className="inline-block whitespace-nowrap">Technology, Mesra</span>
                 </h1>
-                <h2 className="text-sm sm:text-base font-bold text-[#9b1c1c] uppercase tracking-wider">University ERP System</h2>
+                <h2 className="text-sm sm:text-base font-bold text-orange-600 uppercase tracking-wider">University ERP System</h2>
               </div>
             </div>
             
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-300 pb-1 inline-block">Institute Vision</h3>
-              <p className="text-orange-950/80 text-sm font-medium leading-relaxed">
+              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-200 pb-1 inline-block">Institute Vision</h3>
+              <p className="text-orange-950/70 text-sm font-medium leading-relaxed">
                 To become a globally recognized academic institution in consonance with the social, economic and ecological environment, striving continuously for excellence in education, research and technological service to the national needs.
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-300 pb-1 inline-block">Institute Mission</h3>
-              <ul className="list-decimal list-inside text-orange-950/80 text-sm font-medium leading-relaxed space-y-1">
+              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-200 pb-1 inline-block">Institute Mission</h3>
+              <ul className="list-decimal list-inside text-orange-950/70 text-sm font-medium leading-relaxed space-y-1">
                 <li>To educate students at Undergraduate, Post Graduate, Doctoral, and Post Doctoral levels to perform challenging engineering and managerial jobs.</li>
                 <li>To provide excellent research and development facilities.</li>
                 <li>To develop effective teaching and learning skills.</li>
@@ -125,17 +126,19 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white/20">
+          {/* Right Side - Interactive Portal */}
+          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white/70">
             
             <div className="w-full max-w-[360px] mx-auto animate-fade-in-up">
               
-              <div className="flex w-full p-1 bg-white/60 backdrop-blur-sm border border-orange-200/80 rounded-full mb-10 shadow-sm">
+              {/* Role Toggle Switch */}
+              <div className="flex w-full p-1 bg-white border border-orange-200 rounded-full mb-10 shadow-sm">
                 <button
                   type="button"
                   onClick={() => { setRole('student'); setStatus(''); }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                     role === 'student' 
-                      ? 'bg-[#9b1c1c] text-white shadow-md' 
+                      ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]' 
                       : 'bg-transparent text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
                   }`}
                 >
@@ -152,7 +155,7 @@ export default function Login() {
                   onClick={() => { setRole('instructor'); setStatus(''); }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                     role === 'instructor' 
-                      ? 'bg-[#9b1c1c] text-white shadow-md' 
+                      ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]' 
                       : 'bg-transparent text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
                   }`}
                 >
@@ -163,11 +166,12 @@ export default function Login() {
                 </button>
               </div>
               
-              <form onSubmit={handleLogin} className="flex flex-col gap-4">
+              <form onSubmit={handleLogin} className="flex flex-col gap-5">
                 
+                {/* Email Input with Prominent Orange Icon */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-900/50">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h4" />
                     </svg>
@@ -175,15 +179,16 @@ export default function Login() {
                   <input 
                     type="text" 
                     placeholder="Enrollment Number / Email" 
-                    className="w-full bg-white/80 backdrop-blur-sm border border-orange-200/80 text-orange-950 rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#9b1c1c] focus:ring-1 focus:ring-[#9b1c1c] transition-all font-semibold placeholder-orange-900/40 text-sm" 
+                    className="w-full bg-white border border-orange-200 text-orange-950 rounded-xl py-3.5 pl-14 pr-4 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-semibold placeholder-gray-400 text-sm shadow-sm" 
                     onChange={e => setEmail(e.target.value)} 
                     required 
                   />
                 </div>
                 
+                {/* Password Input with Prominent Orange Icon */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-900/50">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
                     </svg>
@@ -191,21 +196,21 @@ export default function Login() {
                   <input 
                     type={showPassword ? "text" : "password"}
                     placeholder="Password" 
-                    className="w-full bg-white/80 backdrop-blur-sm border border-orange-200/80 text-orange-950 rounded-xl py-3.5 pl-12 pr-12 focus:outline-none focus:border-[#9b1c1c] focus:ring-1 focus:ring-[#9b1c1c] transition-all font-semibold placeholder-orange-900/40 text-sm" 
+                    className="w-full bg-white border border-orange-200 text-orange-950 rounded-xl py-3.5 pl-14 pr-12 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-semibold placeholder-gray-400 text-sm shadow-sm" 
                     onChange={e => setPassword(e.target.value)} 
                     required 
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-orange-900/40 hover:text-orange-900 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-orange-400 hover:text-orange-600 transition-colors"
                   >
                     {showPassword ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                       </svg>
                     ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -216,7 +221,7 @@ export default function Login() {
                 <button 
                   type="submit" 
                   disabled={isLoading}
-                  className={`mt-4 flex justify-center items-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(155,28,28,0.3)] bg-[#9b1c1c] hover:bg-[#801515] active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`mt-4 flex justify-center items-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_5px_15px_rgba(234,88,12,0.3)] bg-orange-600 hover:bg-orange-500 active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   {isLoading ? (
                     <>
@@ -233,7 +238,7 @@ export default function Login() {
               </form>
               
               {status && (
-                <div className="mt-5 p-3 bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-700 rounded-xl text-sm text-center font-bold shadow-sm">
+                <div className="mt-5 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm text-center font-bold shadow-sm">
                   {status}
                 </div>
               )}
