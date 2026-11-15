@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
+import { STREAMS } from './FacultyRecords';
 
 export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const { isDarkMode } = useTheme();
@@ -9,7 +10,15 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: student.name, email: student.email, password: '' });
+  
+  // Load existing stream or fallback to first stream in edit mode
+  const [editForm, setEditForm] = useState({ 
+    name: student.name, 
+    email: student.email, 
+    password: '',
+    stream: student.stream || STREAMS[0] 
+  });
+  
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [attendanceData, setAttendanceData] = useState({});
@@ -48,7 +57,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const payload = { name: editForm.name, email: editForm.email };
+      const payload = { name: editForm.name, email: editForm.email, stream: editForm.stream };
       if (editForm.password) payload.password = editForm.password;
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
         method: 'PUT',
@@ -58,7 +67,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       if (res.ok) {
         showToast("Student updated!");
         setIsEditing(false);
-        setCurrentStudent({ ...currentStudent, name: editForm.name, email: editForm.email });
+        setCurrentStudent({ ...currentStudent, name: editForm.name, email: editForm.email, stream: editForm.stream });
         onUpdate();
       } else showToast("Failed to update");
     } catch (error) {}
@@ -180,10 +189,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     return days;
   };
 
-  // Calculate live dynamic counts for the UI stats
   const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
   const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
-
   const glassInput = isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white/60 border-orange-200/50 text-orange-950';
 
   return (
@@ -195,7 +202,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
-        {/* Modal Header WITH Edit Button */}
         <div className={`p-8 border-b flex items-start gap-5 relative ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
           
           <button onClick={() => setIsEditing(!isEditing)} className={`absolute top-6 right-16 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${isDarkMode ? 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'}`}>
@@ -218,6 +224,21 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className={`w-full rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none border ${glassInput}`} />
                 </div>
                 <div>
+                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Stream</label>
+                  <div className="relative">
+                    <select 
+                      value={editForm.stream} 
+                      onChange={e => setEditForm({ ...editForm, stream: e.target.value })} 
+                      className={`w-full appearance-none rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none border pr-8 truncate ${glassInput}`}
+                    >
+                      {STREAMS.map(stream => (
+                        <option key={stream} value={stream} className="text-black bg-white">{stream}</option>
+                      ))}
+                    </select>
+                    <svg className={`w-4 h-4 absolute right-2.5 top-2.5 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
+                <div>
                   <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Reset Password</label>
                   <input type="text" placeholder="Leave blank to keep current..." value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={`w-full rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none border ${glassInput}`} />
                 </div>
@@ -232,13 +253,15 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           </div>
         </div>
 
-        {/* Modal Body */}
         <div className="p-8 overflow-y-auto flex flex-col sm:flex-row gap-8">
           
-          {/* Left Column Dynamic Stats */}
           <div className="w-full sm:w-1/3 flex flex-col gap-6">
             <div>
-              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Student Status</p>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Stream</p>
+              <p className={`font-bold text-xs ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.stream || 'Unassigned'}</p>
+            </div>
+            <div>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Status</p>
               <p className={`font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.deviceId ? 'Locked to Device' : 'Active / Unlocked'}</p>
             </div>
             <div>
@@ -249,13 +272,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-red-500/70' : 'text-red-600/70'}`}>Total Absent</p>
               <p className={`font-extrabold text-2xl ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{absentCount}</p>
             </div>
-            <div>
-              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Total Classes</p>
-              <p className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{presentCount + absentCount} Days Recorded</p>
-            </div>
           </div>
 
-          {/* Right Column Calendar */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <button onClick={() => shiftMonth(-1)} className={`p-1 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/40 hover:text-orange-950'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
@@ -276,7 +294,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           </div>
         </div>
 
-        {/* Modal Actions Footer */}
         <div className={`p-8 border-t flex gap-4 shrink-0 mt-auto items-center justify-center ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
           <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`px-8 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed border active:scale-95 flex items-center gap-2 ${isDarkMode ? 'bg-transparent border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' : 'bg-transparent border-emerald-500/50 text-emerald-600 hover:bg-emerald-50'}`}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Unlock Device

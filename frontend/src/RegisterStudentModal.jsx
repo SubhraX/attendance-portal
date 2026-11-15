@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
+import { STREAMS } from './FacultyRecords';
 
 export default function RegisterStudentModal({ onClose, onSuccess }) {
   const { isDarkMode } = useTheme();
   const { showToast } = useToast();
-  const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
+  
+  // Default to the first stream in the list
+  const [regForm, setRegForm] = useState({ name: '', email: '', password: '', stream: STREAMS[0] });
 
   const handleRegisterStudent = async (e) => {
     e.preventDefault();
@@ -43,6 +46,20 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
         <form onSubmit={handleRegisterStudent} className="flex flex-col gap-4">
           <input type="text" placeholder="Full Name" required value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} className={glassInput} />
           <input type="email" placeholder="Email Address" required value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} className={glassInput} />
+          
+          <div className="relative">
+            <select 
+              value={regForm.stream} 
+              onChange={e => setRegForm({ ...regForm, stream: e.target.value })} 
+              className={`appearance-none cursor-pointer truncate pr-10 ${glassInput}`}
+            >
+              {STREAMS.map(stream => (
+                <option key={stream} value={stream} className="text-black bg-white">{stream}</option>
+              ))}
+            </select>
+            <svg className={`w-4 h-4 absolute right-4 top-4 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
+
           <input type="password" placeholder="Password" required value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} className={glassInput} />
           
           <button type="submit" className="mt-4 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-full transition-all shadow-[0_0_15px_rgba(234,88,12,0.4)] active:scale-95">
