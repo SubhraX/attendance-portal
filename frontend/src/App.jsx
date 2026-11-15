@@ -6,43 +6,50 @@ import InstructorDashboard from './InstructorDashboard';
 import StudentDashboard from './StudentDashboard';
 import StudentScanner from './StudentScanner';
 
-export default function App() {
-  // Check if a user is logged in
+// 1. Dynamic Portal Route: Sorts Faculty and Students dynamically
+const ProtectedPortal = () => {
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  if (!token) return <Navigate to="/login" replace />;
+  if (user.role === 'instructor') return <InstructorDashboard />;
+  
+  return <StudentDashboard />;
+};
+
+// 2. Protected Scanner Route: Only logged-in users can access
+const ProtectedScanner = () => {
+  const token = localStorage.getItem('token');
+  
+  if (!token) return <Navigate to="/login" replace />;
+  
+  return <StudentScanner />;
+};
+
+// 3. Public Login Route: Redirects to dashboard if already logged in
+const PublicLogin = () => {
+  const token = localStorage.getItem('token');
+  
+  if (token) return <Navigate to="/" replace />;
+  
+  return <Login />;
+};
+
+export default function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Login Route */}
-            <Route 
-              path="/login" 
-              element={!token ? <Login /> : <Navigate to="/" />} 
-            />
+            <Route path="/login" element={<PublicLogin />} />
             
-            {/* Main Portal Route (Decides which dashboard to show) */}
-            <Route 
-              path="/" 
-              element={
-                !token ? <Navigate to="/login" /> :
-                user.role === 'instructor' ? <InstructorDashboard /> :
-                <StudentDashboard /> // This makes the portal open first!
-              } 
-            />
-
-            {/* Dedicated Scanner Route (Opened via the Dashboard button) */}
-            <Route 
-              path="/scanner" 
-              element={
-                !token ? <Navigate to="/login" /> : 
-                <StudentScanner />
-              } 
-            />
-
+            {/* The base path now triggers our dynamic sorting wrapper */}
+            <Route path="/" element={<ProtectedPortal />} />
+            
+            <Route path="/scanner" element={<ProtectedScanner />} />
+            
             {/* Catch-all fallback */}
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </ToastProvider>
