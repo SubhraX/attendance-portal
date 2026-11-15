@@ -253,12 +253,19 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
 
+    // NEW LOGIC: Delete the record completely if status is 'clear'
+    if (status === 'clear') {
+      if (record) {
+        await Attendance.deleteOne({ _id: record._id });
+      }
+      return res.status(200).json({ message: 'Attendance cleared for date' });
+    }
+
     if (record) {
       record.status = status;
       record.sessionToken = 'MANUAL_OVERRIDE';
       await record.save();
     } else {
-      // Set to midday to avoid edge-case timezone shifting
       const midDay = new Date(date + 'T12:00:00Z');
       record = await Attendance.create({
         student: req.params.id,

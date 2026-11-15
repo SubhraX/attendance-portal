@@ -8,26 +8,18 @@ export default function FacultyRecords() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Registration Modal State
   const [showRegModal, setShowRegModal] = useState(false);
   const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
 
-  // Student Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
-  // Sub-menu state for deletions
-  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Advanced Calendar State
-  const [availableMonths, setAvailableMonths] = useState([]);
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [attendanceData, setAttendanceData] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
 
-  // Edit Student State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '' });
 
@@ -75,7 +67,6 @@ export default function FacultyRecords() {
   const openStudentModal = async (student) => {
     setSelectedStudent(student);
     setIsEditing(false);
-    setShowDeleteMenu(false); // Reset delete menu
     setEditForm({ name: student.name, email: student.email, password: '' });
     setIsModalLoading(true);
 
@@ -88,31 +79,17 @@ export default function FacultyRecords() {
 
       if (res.ok && Array.isArray(records)) {
         const dataMap = {};
-        const monthsSet = new Set();
-
         records.forEach(r => {
           const d = new Date(r.createdAt || r.date);
           if (!isNaN(d)) {
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-
             dataMap[dateStr] = r.status || 'present';
-            monthsSet.add(monthStr);
           }
         });
-
-        const sortedMonths = Array.from(monthsSet).sort();
         setAttendanceData(dataMap);
-        setAvailableMonths(sortedMonths);
-
-        if (sortedMonths.length > 0) {
-          setCurrentMonthIndex(sortedMonths.length - 1);
-          setCalYear(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[0]));
-          setCalMonth(parseInt(sortedMonths[sortedMonths.length - 1].split('-')[1]) - 1);
-        } else {
-          setCalYear(new Date().getFullYear());
-          setCalMonth(new Date().getMonth());
-        }
+        // Default to current month when opening modal
+        setCalYear(new Date().getFullYear());
+        setCalMonth(new Date().getMonth());
       }
     } catch (error) {
       console.error("Failed to fetch student attendance", error);
@@ -164,7 +141,6 @@ export default function FacultyRecords() {
     }
   };
 
-  // Option 1: Clear Attendance ONLY
   const handleDeleteAttendanceOnly = async (studentId) => {
     if (!window.confirm("Are you sure you want to wipe ALL attendance records for this student? The student will NOT be deleted.")) return;
     try {
@@ -175,7 +151,7 @@ export default function FacultyRecords() {
       });
       if (res.ok) {
         showToast("Attendance records wiped completely.");
-        openStudentModal(selectedStudent); // Refresh modal to show empty calendar
+        setAttendanceData({}); // Clear UI instantly
       } else {
         showToast("Failed to clear attendance.");
       }
@@ -184,7 +160,6 @@ export default function FacultyRecords() {
     }
   };
 
-  // Option 2: Delete Entire Student
   const handleRemoveStudent = async (studentId) => {
     if (!window.confirm("CRITICAL WARNING: This will permanently delete this student and ALL their attendance records. Proceed?")) return;
     try {
@@ -205,32 +180,45 @@ export default function FacultyRecords() {
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+  // FIXED: Standard calendar navigation logic that works for every month infinitely
   const shiftMonth = (offset) => {
-    if (availableMonths.length === 0) return;
-
-    let newIndex = currentMonthIndex + offset;
-    if (newIndex < 0) newIndex = 0;
-    if (newIndex >= availableMonths.length) newIndex = availableMonths.length - 1;
-
-    setCurrentMonthIndex(newIndex);
-    setCalYear(parseInt(availableMonths[newIndex].split('-')[0]));
-    setCalMonth(parseInt(availableMonths[newIndex].split('-')[1]) - 1);
+    let newMonth = calMonth + offset;
+    let newYear = calYear;
+    
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    }
+    
+    setCalMonth(newMonth);
+    setCalYear(newYear);
   };
 
+  // FIXED: 3-Way Toggle Logic (Unmarked -> Present -> Absent -> Clear)
   const handleDayClick = async (day) => {
     if (!selectedStudent) return;
     
     const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const currentStatus = attendanceData[dateString];
     
-    // Toggle logic: Unmarked -> Present -> Absent -> Present
-    const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+    let newStatus;
+    if (!currentStatus) newStatus = 'present';
+    else if (currentStatus === 'present') newStatus = 'absent';
+    else newStatus = 'clear'; // If absent, clear it
     
     // Optimistic UI update for instant visual feedback
-    setAttendanceData(prev => ({
-      ...prev,
-      [dateString]: newStatus
-    }));
+    setAttendanceData(prev => {
+      const updated = { ...prev };
+      if (newStatus === 'clear') {
+        delete updated[dateString];
+      } else {
+        updated[dateString] = newStatus;
+      }
+      return updated;
+    });
 
     try {
       const token = localStorage.getItem('token');
@@ -243,11 +231,21 @@ export default function FacultyRecords() {
       if (!res.ok) {
         showToast("Failed to update date manually.");
         // Revert UI on failure
-        setAttendanceData(prev => ({ ...prev, [dateString]: currentStatus }));
+        setAttendanceData(prev => {
+          const reverted = { ...prev };
+          if (currentStatus) reverted[dateString] = currentStatus;
+          else delete reverted[dateString];
+          return reverted;
+        });
       }
     } catch (error) {
       showToast("Error updating record.");
-      setAttendanceData(prev => ({ ...prev, [dateString]: currentStatus }));
+      setAttendanceData(prev => {
+        const reverted = { ...prev };
+        if (currentStatus) reverted[dateString] = currentStatus;
+        else delete reverted[dateString];
+        return reverted;
+      });
     }
   };
 
@@ -292,7 +290,6 @@ export default function FacultyRecords() {
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col h-full relative">
 
-      {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center mb-8 gap-4 bg-[#151b2b] p-6 rounded-2xl border border-[#1e293b] shadow-lg">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-wide">Student Directory</h2>
@@ -319,7 +316,6 @@ export default function FacultyRecords() {
         </div>
       </div>
 
-      {/* Grid of Student Cards */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center text-gray-500">Loading student directory...</div>
       ) : (
@@ -352,7 +348,6 @@ export default function FacultyRecords() {
         </div>
       )}
 
-      {/* REGISTRATION MODAL */}
       {showRegModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
           <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-md shadow-2xl p-8 relative">
@@ -368,14 +363,12 @@ export default function FacultyRecords() {
         </div>
       )}
 
-      {/* STUDENT DETAILS & CALENDAR MODAL */}
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
           <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh]">
 
             <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full transition-colors z-10"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
 
-            {/* Modal Header */}
             <div className="p-8 border-b border-[#1e293b] bg-gradient-to-b from-[#101524] to-[#151b2b] relative">
               <button
                 onClick={() => setIsEditing(!isEditing)}
@@ -413,15 +406,14 @@ export default function FacultyRecords() {
               </div>
             </div>
 
-            {/* Visual Calendar Body */}
             <div className="p-8 overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-
-                {/* Calendar Navigation */}
+                
+                {/* Free Navigation Buttons */}
                 <div className="flex items-center gap-4 bg-[#101524] px-4 py-2 rounded-xl border border-[#1e293b]">
-                  <button onClick={() => shiftMonth(-1)} disabled={currentMonthIndex <= 0} className={`p-1 ${currentMonthIndex <= 0 ? 'text-gray-700' : 'text-gray-400 hover:text-white'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                  <button onClick={() => shiftMonth(-1)} className="p-1 text-gray-400 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
                   <span className="text-white font-bold min-w-[120px] text-center">{monthNames[calMonth]} {calYear}</span>
-                  <button onClick={() => shiftMonth(1)} disabled={currentMonthIndex >= availableMonths.length - 1} className={`p-1 ${currentMonthIndex >= availableMonths.length - 1 ? 'text-gray-700' : 'text-gray-400 hover:text-white'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
+                  <button onClick={() => shiftMonth(1)} className="p-1 text-gray-400 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
 
                 <div className="hidden sm:flex gap-3 text-xs text-gray-400 font-medium">
@@ -440,11 +432,11 @@ export default function FacultyRecords() {
                   <div className="grid grid-cols-7 gap-2">
                     {renderCalendar()}
                   </div>
+                  <p className="text-center text-xs text-gray-500 mt-4">Tap a day to toggle: <span className="text-emerald-500 font-bold">Present</span> ➔ <span className="text-red-500 font-bold">Absent</span> ➔ <span className="text-gray-400 font-bold">Clear</span></p>
                 </div>
               )}
             </div>
 
-            {/* Actions Footer */}
             <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex gap-4 shrink-0 mt-auto">
               <button
                 onClick={() => handleResetDevice(selectedStudent._id)}
@@ -462,18 +454,14 @@ export default function FacultyRecords() {
               </button>
             </div>
 
-            {/* SEPARATE DELETE CONFIRMATION MODAL */}
             {showDeleteModal && (
               <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
                 <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-md shadow-2xl p-8 relative flex flex-col text-center">
-
                   <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/30">
                     <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                   </div>
-
                   <h3 className="text-2xl font-bold text-white mb-2">Delete Data</h3>
                   <p className="text-gray-400 text-sm mb-8">What data would you like to remove for <span className="font-bold text-white">{selectedStudent?.name}</span>?</p>
-
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={async () => {
@@ -484,7 +472,6 @@ export default function FacultyRecords() {
                     >
                       Clear Attendance
                     </button>
-
                     <button
                       onClick={async () => {
                         await handleRemoveStudent(selectedStudent._id);
@@ -494,7 +481,6 @@ export default function FacultyRecords() {
                     >
                       Delete Student
                     </button>
-
                     <button
                       onClick={() => setShowDeleteModal(false)}
                       className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-[#1e293b] text-gray-300 hover:bg-gray-700 mt-2"

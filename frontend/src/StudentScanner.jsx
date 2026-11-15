@@ -77,7 +77,7 @@ export default function StudentScanner() {
     }
   };
 
-  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting, with Hardware Checks)
+  // NATIVE CAMERA CONSTRAINTS (Bypasses React Remounting)
   const applyNativeConstraint = async (constraints) => {
     const video = document.querySelector('video');
     if (!video || !video.srcObject) return false;
@@ -85,22 +85,19 @@ export default function StudentScanner() {
     const track = video.srcObject.getVideoTracks()[0];
     if (!track || typeof track.applyConstraints !== 'function') return false;
 
-    const constraintKey = Object.keys(constraints)[0]; 
-
     try {
-      if (typeof track.getCapabilities === 'function') {
-        const capabilities = track.getCapabilities();
-        if (!capabilities[constraintKey]) return false;
-      }
-      
+      // 1. Force the constraint directly. 
+      // Modern Android Chrome requires torch to be inside the 'advanced' array.
       await track.applyConstraints({ advanced: [constraints] });
       return true;
     } catch (err) {
       try {
+        // 2. Fallback for iOS Safari which prefers direct application
         await track.applyConstraints(constraints);
         return true;
       } catch (fallbackErr) {
-        return false;
+        console.warn("Hardware rejected constraint:", fallbackErr);
+        return false; // Only fail if the hardware actively rejects both attempts
       }
     }
   };
