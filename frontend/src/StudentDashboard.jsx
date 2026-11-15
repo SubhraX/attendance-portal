@@ -65,7 +65,6 @@ export default function StudentDashboard() {
     setCalMonth(newMonth); setCalYear(newYear);
   };
 
-  // Securely unlock device via backend before clearing local storage
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -73,7 +72,7 @@ export default function StudentDashboard() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-    } catch (e) {} // Proceed to clear local storage even if network fails
+    } catch (e) {} 
     
     localStorage.clear();
     navigate('/login');
@@ -119,12 +118,13 @@ export default function StudentDashboard() {
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
       
-      {/* RESPONSIVE SIDEBAR: Horizontal on mobile, vertical on desktop */}
-      <div className={`md:border-r border-b flex flex-row md:flex-col p-4 md:p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'md:w-64' : 'md:w-24 md:items-center'} w-full items-center md:items-start justify-between md:justify-start overflow-x-auto ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
+      {/* HEADER / SIDEBAR */}
+      <div className={`md:border-r border-b flex flex-row md:flex-col p-4 md:p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out w-full md:w-auto ${isSidebarExpanded ? 'md:w-64' : 'md:w-24 md:items-center'} justify-between md:justify-start ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
         
+        {/* Logo & Title */}
         <div 
-          onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-          className={`flex items-center md:mb-10 md:pb-6 md:border-b cursor-pointer group shrink-0 ${isSidebarExpanded ? 'gap-3' : 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
+          onClick={() => { if(window.innerWidth >= 768) setIsSidebarExpanded(!isSidebarExpanded) }}
+          className={`flex items-center md:mb-10 md:pb-6 md:border-b cursor-pointer group shrink-0 ${isSidebarExpanded ? 'gap-3' : 'gap-3 md:justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
           title="Toggle Sidebar"
         >
           <img 
@@ -132,74 +132,71 @@ export default function StudentDashboard() {
             alt="BIT Mesra" 
             className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md bg-white/10 rounded-full p-1 shrink-0 group-hover:scale-110 transition-transform"
           />
-          {isSidebarExpanded && (
-            <div className="flex flex-col animate-fade-in-up hidden md:flex">
-              <h2 className={`text-lg font-extrabold tracking-wide uppercase leading-tight whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>
-                BIT Mesra
-              </h2>
-              <span className={`text-[10px] font-bold tracking-widest uppercase whitespace-nowrap ${isDarkMode ? 'text-gray-400' : 'text-orange-600'}`}>
-                Student Panel
-              </span>
-            </div>
-          )}
+          <div className={`flex flex-col animate-fade-in-up ${!isSidebarExpanded ? 'hidden md:hidden' : 'flex'}`}>
+            <h2 className={`text-lg font-extrabold tracking-wide uppercase leading-tight whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>
+              BIT Mesra
+            </h2>
+            <span className={`text-[10px] font-bold tracking-widest uppercase whitespace-nowrap ${isDarkMode ? 'text-gray-400' : 'text-orange-600'}`}>
+              Student Panel
+            </span>
+          </div>
         </div>
 
-        <div className={`flex flex-row md:flex-col gap-2 md:gap-4 ml-4 md:ml-0 md:w-full ${!isSidebarExpanded && 'md:items-center'}`}>
-          <button 
-            onClick={() => setActiveTab('scan')} 
-            className={`p-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'md:px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'scan' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}
-            title="Scan QR"
-          >
+        {/* MOBILE ONLY: Theme & Logout Buttons */}
+        <div className="flex md:hidden items-center gap-2">
+          <button onClick={toggleTheme} className={`p-2.5 rounded-xl border transition-all active:scale-95 ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300' : 'bg-white/50 border-orange-200 text-orange-900'}`}>
+            {isDarkMode ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
+          </button>
+          <button onClick={handleLogout} className={`p-2.5 rounded-xl border transition-all active:scale-95 ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-red-50 text-red-600 border-red-200'}`}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          </button>
+        </div>
+
+        {/* DESKTOP ONLY: Sidebar Tabs */}
+        <div className={`hidden md:flex flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'}`}>
+          <button onClick={() => setActiveTab('scan')} className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'scan' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap hidden md:inline">Scan QR</span>}
+            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Scan QR</span>}
           </button>
-          
-          <button 
-            onClick={() => setActiveTab('stats')} 
-            className={`p-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'md:px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'stats' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}
-            title="My Stats"
-          >
+          <button onClick={() => setActiveTab('stats')} className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'stats' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap hidden md:inline">My Stats</span>}
+            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">My Stats</span>}
           </button>
         </div>
 
-        <div className={`md:mt-auto md:pt-6 md:border-t flex flex-row md:flex-col gap-2 md:gap-4 ml-2 md:ml-0 md:w-full ${!isSidebarExpanded && 'md:items-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
-          <button
-            onClick={toggleTheme}
-            className={`p-3 rounded-xl font-semibold transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'md:px-4 gap-3 md:w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300 hover:bg-white/5' : 'bg-white/50 border-orange-200 text-orange-900 hover:bg-orange-50'}`}
-            title={isDarkMode ? "Light Mode" : "Dark Mode"}
-          >
-            {isDarkMode ? (
-              <>
-                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap hidden md:inline">Light Mode</span>}
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap hidden md:inline">Dark Mode</span>}
-              </>
-            )}
+        {/* DESKTOP ONLY: Theme & Logout (Bottom) */}
+        <div className={`hidden md:flex mt-auto pt-6 border-t flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
+          <button onClick={toggleTheme} className={`p-3 rounded-xl font-semibold transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300 hover:bg-white/5' : 'bg-white/50 border-orange-200 text-orange-900 hover:bg-orange-50'}`}>
+            {isDarkMode ? <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            : <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
+            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Theme</span>}
           </button>
-          
-          <button 
-            onClick={handleLogout}
-            className={`p-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'md:px-4 gap-3 md:w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
-            title="Log Out"
-          >
+          <button onClick={handleLogout} className={`p-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-red-50 text-red-600 border-red-200'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap hidden md:inline">Log Out</span>}
+            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Log Out</span>}
           </button>
         </div>
       </div>
 
+      {/* MOBILE ONLY: Floating Bottom Hover Panel */}
+      <div className={`md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 flex items-center p-1.5 rounded-[2rem] border shadow-[0_10px_40px_rgba(0,0,0,0.4)] backdrop-blur-2xl z-50 ${isDarkMode ? 'bg-[#10141d]/90 border-white/10' : 'bg-white/95 border-orange-200'}`}>
+        <button onClick={() => setActiveTab('scan')} className={`px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center gap-2.5 ${activeTab === 'scan' ? 'bg-orange-600 text-white shadow-[0_0_15px_rgba(234,88,12,0.4)]' : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/70 hover:text-orange-900'}`}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+          <span className={activeTab === 'scan' ? 'block' : 'hidden sm:block'}>Scan QR</span>
+        </button>
+        <button onClick={() => setActiveTab('stats')} className={`px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center gap-2.5 ${activeTab === 'stats' ? 'bg-orange-600 text-white shadow-[0_0_15px_rgba(234,88,12,0.4)]' : isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/70 hover:text-orange-900'}`}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span className={activeTab === 'stats' ? 'block' : 'hidden sm:block'}>My Stats</span>
+        </button>
+      </div>
+
       {/* Main Content Area */}
-      <div className="flex-1 p-4 md:p-10 flex flex-col overflow-y-auto z-10 relative transition-all duration-300">
+      <div className="flex-1 p-4 pb-28 md:p-10 flex flex-col overflow-y-auto z-10 relative transition-all duration-300">
         <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-2 md:mt-4">
           
           {activeTab === 'scan' ? (
-            <div className="w-full mx-auto flex items-center justify-center h-full mt-10 md:mt-0">
+            <div className="w-full mx-auto flex items-center justify-center h-full mt-6 md:mt-0">
               <div className={`flex flex-col items-center justify-center p-8 md:p-14 rounded-3xl border shadow-2xl backdrop-blur-xl animate-fade-in-up w-full max-w-lg text-center ${glassPanel}`}>
                 <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-8 border ${isDarkMode ? 'bg-black/40 border-orange-500/30' : 'bg-orange-50 border-orange-200'}`}>
                   <svg className={`w-10 h-10 md:w-12 md:h-12 ${isDarkMode ? 'text-orange-500' : 'text-orange-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
