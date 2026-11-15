@@ -31,41 +31,46 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
     }
   };
 
-  const glassInput = `w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors border ${isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white/60 border-orange-200 text-orange-950 font-medium focus:ring-2 focus:ring-orange-500/20 placeholder-orange-900/40'}`;
-  const optionStyle = isDarkMode ? "bg-[#11161d] text-white" : "bg-white text-orange-950";
+  const inputClass = `w-full border px-3 py-1.5 text-sm rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`;
 
   return (
-    <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-xl animate-fade-in-up ${isDarkMode ? 'bg-black/60' : 'bg-black/20'}`}>
-      <div className={`border rounded-[2rem] w-full max-w-md shadow-2xl p-8 relative backdrop-blur-3xl ${isDarkMode ? 'bg-[#191e28]/95 border-white/10' : 'bg-white/95 border-orange-200'}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className={`w-full max-w-sm rounded-sm shadow-md flex flex-col overflow-hidden ${isDarkMode ? 'bg-gray-900 border border-gray-700' : 'bg-gray-50 border border-gray-300'}`}>
         
-        <button onClick={onClose} className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white bg-black/20' : 'text-orange-400 hover:text-orange-600 bg-orange-50'}`}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        <div className={`flex justify-between items-center px-4 py-3 border-b ${isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-100'}`}>
+          <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Register New Student</h3>
+          <button onClick={onClose} className={`text-xl leading-none ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>&times;</button>
+        </div>
         
-        <h3 className={`text-2xl font-bold mb-6 tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Register Student</h3>
-        
-        <form onSubmit={handleRegisterStudent} className="flex flex-col gap-4">
-          <input type="text" placeholder="Full Name" required value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} className={glassInput} />
-          <input type="email" placeholder="Email Address" required value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} className={glassInput} />
+        <form onSubmit={handleRegisterStudent} className="flex flex-col gap-3 p-4">
+          <div>
+            <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Full Name</label>
+            <input type="text" required value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} className={inputClass} />
+          </div>
           
-          <div className="relative">
-            <select 
-              value={regForm.stream} 
-              onChange={e => setRegForm({ ...regForm, stream: e.target.value })} 
-              className={`appearance-none cursor-pointer truncate pr-10 ${glassInput}`}
-            >
+          <div>
+            <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Email Address</label>
+            <input type="email" required value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} className={inputClass} />
+          </div>
+          
+          <div>
+            <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Stream</label>
+            <select value={regForm.stream} onChange={e => setRegForm({ ...regForm, stream: e.target.value })} className={inputClass}>
               {STREAMS.map(stream => (
-                <option key={stream} value={stream} className={optionStyle}>{stream}</option>
+                <option key={stream} value={stream}>{stream}</option>
               ))}
             </select>
-            <svg className={`w-4 h-4 absolute right-4 top-4 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
           </div>
 
-          <input type="password" placeholder="Password" required value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} className={glassInput} />
+          <div>
+            <label className={`block text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Password</label>
+            <input type="password" required value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} className={inputClass} />
+          </div>
           
-          <button type="submit" className="mt-4 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-full transition-all shadow-[0_0_15px_rgba(234,88,12,0.4)] active:scale-95">
-            Create Account
-          </button>
+          <div className="flex justify-end gap-2 mt-2">
+            <button type="button" onClick={onClose} className={`px-4 py-1.5 text-sm rounded-sm border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}>Cancel</button>
+            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-sm">Create Account</button>
+          </div>
         </form>
       </div>
     </div>
