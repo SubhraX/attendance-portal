@@ -253,7 +253,7 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
 
-    // NEW LOGIC: Delete the record completely if status is 'clear'
+    // CRITICAL FIX: Intercept 'clear' before it reaches Mongoose validation
     if (status === 'clear') {
       if (record) {
         await Attendance.deleteOne({ _id: record._id });
@@ -266,17 +266,20 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
       record.sessionToken = 'MANUAL_OVERRIDE';
       await record.save();
     } else {
+      // Create new historical record safely
       const midDay = new Date(date + 'T12:00:00Z');
       record = await Attendance.create({
         student: req.params.id,
         sessionToken: 'MANUAL_OVERRIDE',
         status: status,
         ipAddress: 'MANUAL_OVERRIDE',
-        createdAt: midDay
+        createdAt: midDay,
+        date: midDay // Fallback just in case timestamps:true overwrites createdAt
       });
     }
     res.status(200).json({ message: 'Attendance updated manually', record });
   } catch (error) {
+    console.error("Manual Override Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

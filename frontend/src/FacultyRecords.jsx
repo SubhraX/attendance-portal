@@ -1,27 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useToast } from './ToastContext';
+import RegisterStudentModal from './RegisterStudentModal';
+import StudentDetailsModal from './StudentDetailsModal';
 
 export default function FacultyRecords() {
-  const { showToast } = useToast();
-
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [showRegModal, setShowRegModal] = useState(false);
-  const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
-
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [isModalLoading, setIsModalLoading] = useState(false);
-
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  const [attendanceData, setAttendanceData] = useState({});
-  const [calYear, setCalYear] = useState(new Date().getFullYear());
-  const [calMonth, setCalMonth] = useState(new Date().getMonth());
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', email: '', password: '' });
 
   useEffect(() => {
     fetchStudents();
@@ -42,246 +29,6 @@ export default function FacultyRecords() {
     setLoading(false);
   };
 
-  const handleRegisterStudent = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...regForm, role: 'student' })
-      });
-      if (res.ok) {
-        showToast("Student registered successfully!");
-        setShowRegModal(false);
-        setRegForm({ name: '', email: '', password: '' });
-        fetchStudents();
-      } else {
-        const data = await res.json();
-        showToast(data.message || 'Registration failed');
-      }
-    } catch (error) {
-      showToast("Error connecting to server");
-    }
-  };
-
-  const openStudentModal = async (student) => {
-    setSelectedStudent(student);
-    setIsEditing(false);
-    setEditForm({ name: student.name, email: student.email, password: '' });
-    setIsModalLoading(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${student._id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const records = await res.json();
-
-      if (res.ok && Array.isArray(records)) {
-        const dataMap = {};
-        records.forEach(r => {
-          const d = new Date(r.createdAt || r.date);
-          if (!isNaN(d)) {
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            dataMap[dateStr] = r.status || 'present';
-          }
-        });
-        setAttendanceData(dataMap);
-        // Default to current month when opening modal
-        setCalYear(new Date().getFullYear());
-        setCalMonth(new Date().getMonth());
-      }
-    } catch (error) {
-      console.error("Failed to fetch student attendance", error);
-    }
-    setIsModalLoading(false);
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      const payload = { name: editForm.name, email: editForm.email };
-      if (editForm.password) payload.password = editForm.password;
-
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${selectedStudent._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        showToast("Student updated successfully!");
-        setIsEditing(false);
-        fetchStudents();
-        setSelectedStudent({ ...selectedStudent, name: editForm.name, email: editForm.email });
-      } else {
-        showToast("Failed to update student");
-      }
-    } catch (error) {
-      showToast("Error updating student");
-    }
-  };
-
-  const handleResetDevice = async (studentId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/reset-device', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ studentId })
-      });
-      if (res.ok) {
-        showToast("Device unlocked successfully.");
-        fetchStudents();
-        setSelectedStudent({ ...selectedStudent, deviceId: null });
-      }
-    } catch (error) {
-      showToast('Failed to reset device');
-    }
-  };
-
-  const handleDeleteAttendanceOnly = async (studentId) => {
-    if (!window.confirm("Are you sure you want to wipe ALL attendance records for this student? The student will NOT be deleted.")) return;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/records`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        showToast("Attendance records wiped completely.");
-        setAttendanceData({}); // Clear UI instantly
-      } else {
-        showToast("Failed to clear attendance.");
-      }
-    } catch (error) {
-      showToast('Error clearing attendance data');
-    }
-  };
-
-  const handleRemoveStudent = async (studentId) => {
-    if (!window.confirm("CRITICAL WARNING: This will permanently delete this student and ALL their attendance records. Proceed?")) return;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${studentId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        showToast("Student and records removed.");
-        fetchStudents();
-        setSelectedStudent(null);
-      }
-    } catch (error) {
-      showToast('Failed to remove student');
-    }
-  };
-
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-  // FIXED: Standard calendar navigation logic that works for every month infinitely
-  const shiftMonth = (offset) => {
-    let newMonth = calMonth + offset;
-    let newYear = calYear;
-    
-    if (newMonth < 0) {
-      newMonth = 11;
-      newYear -= 1;
-    } else if (newMonth > 11) {
-      newMonth = 0;
-      newYear += 1;
-    }
-    
-    setCalMonth(newMonth);
-    setCalYear(newYear);
-  };
-
-  // FIXED: 3-Way Toggle Logic (Unmarked -> Present -> Absent -> Clear)
-  const handleDayClick = async (day) => {
-    if (!selectedStudent) return;
-    
-    const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const currentStatus = attendanceData[dateString];
-    
-    let newStatus;
-    if (!currentStatus) newStatus = 'present';
-    else if (currentStatus === 'present') newStatus = 'absent';
-    else newStatus = 'clear'; // If absent, clear it
-    
-    // Optimistic UI update for instant visual feedback
-    setAttendanceData(prev => {
-      const updated = { ...prev };
-      if (newStatus === 'clear') {
-        delete updated[dateString];
-      } else {
-        updated[dateString] = newStatus;
-      }
-      return updated;
-    });
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${selectedStudent._id}/manual`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ date: dateString, status: newStatus })
-      });
-      
-      if (!res.ok) {
-        showToast("Failed to update date manually.");
-        // Revert UI on failure
-        setAttendanceData(prev => {
-          const reverted = { ...prev };
-          if (currentStatus) reverted[dateString] = currentStatus;
-          else delete reverted[dateString];
-          return reverted;
-        });
-      }
-    } catch (error) {
-      showToast("Error updating record.");
-      setAttendanceData(prev => {
-        const reverted = { ...prev };
-        if (currentStatus) reverted[dateString] = currentStatus;
-        else delete reverted[dateString];
-        return reverted;
-      });
-    }
-  };
-
-  const renderCalendar = () => {
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    
-    const days = [];
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-10"></div>);
-    }
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const status = attendanceData[dateString];
-      
-      let styleClass = 'bg-[#0b0f19] border border-[#1e293b] text-gray-500 hover:border-[#5c98ff] hover:text-white cursor-pointer'; 
-      if (status === 'present') {
-        styleClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)] hover:bg-emerald-500/30 cursor-pointer';
-      } else if (status === 'absent') {
-        styleClass = 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)] hover:bg-red-500/30 cursor-pointer';
-      }
-
-      days.push(
-        <div 
-          key={day} 
-          onClick={() => handleDayClick(day)}
-          className={`h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all ${styleClass}`}
-        >
-          {day}
-        </div>
-      );
-    }
-    return days;
-  };
-
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -290,6 +37,7 @@ export default function FacultyRecords() {
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col h-full relative">
 
+      {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center mb-8 gap-4 bg-[#151b2b] p-6 rounded-2xl border border-[#1e293b] shadow-lg">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-wide">Student Directory</h2>
@@ -316,6 +64,7 @@ export default function FacultyRecords() {
         </div>
       </div>
 
+      {/* Grid of Student Cards */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center text-gray-500">Loading student directory...</div>
       ) : (
@@ -326,7 +75,7 @@ export default function FacultyRecords() {
             filteredStudents.map(student => (
               <div
                 key={student._id}
-                onClick={() => openStudentModal(student)}
+                onClick={() => setSelectedStudent(student)}
                 className="bg-[#151b2b] border border-[#1e293b] rounded-2xl p-5 hover:border-[#5c98ff] hover:shadow-[0_0_20px_rgba(92,152,255,0.1)] cursor-pointer transition-all group relative overflow-hidden flex flex-col"
               >
                 <div className={`absolute top-0 right-0 w-2 h-full ${student.deviceId ? 'bg-emerald-500/50' : 'bg-orange-500/50'}`}></div>
@@ -348,152 +97,22 @@ export default function FacultyRecords() {
         </div>
       )}
 
+      {/* Render Modals Separately */}
       {showRegModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
-          <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-md shadow-2xl p-8 relative">
-            <button onClick={() => setShowRegModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            <h3 className="text-2xl font-bold text-white mb-6">Register New Student</h3>
-            <form onSubmit={handleRegisterStudent} className="flex flex-col gap-4">
-              <input type="text" placeholder="Full Name" required value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
-              <input type="email" placeholder="Email Address" required value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
-              <input type="password" placeholder="Password" required value={regForm.password} onChange={e => setRegForm({ ...regForm, password: e.target.value })} className="bg-[#0b0f19] border border-[#1e293b] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500" />
-              <button type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all">Create Account</button>
-            </form>
-          </div>
-        </div>
+        <RegisterStudentModal 
+          onClose={() => setShowRegModal(false)} 
+          onSuccess={fetchStudents} 
+        />
       )}
 
       {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
-          <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh]">
-
-            <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-[#0b0f19] p-2 rounded-full transition-colors z-10"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-
-            <div className="p-8 border-b border-[#1e293b] bg-gradient-to-b from-[#101524] to-[#151b2b] relative">
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="absolute top-6 right-16 text-xs font-bold bg-[#2563eb]/20 text-[#5c98ff] px-3 py-1.5 rounded-lg hover:bg-[#2563eb]/40 transition-colors"
-              >
-                {isEditing ? 'Cancel Edit' : 'Edit Info'}
-              </button>
-
-              <div className="flex items-center gap-5 mt-4">
-                <div className="w-16 h-16 rounded-full bg-[#2563eb]/20 text-[#5c98ff] flex items-center justify-center font-bold text-3xl shadow-inner shrink-0">
-                  {selectedStudent.name.charAt(0).toUpperCase()}
-                </div>
-                {isEditing ? (
-                  <form onSubmit={handleEditSubmit} className="flex flex-col gap-3 w-full pr-2">
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Student Name</label>
-                      <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Email Address</label>
-                      <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm focus:border-[#5c98ff] focus:outline-none" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1 block">Reset Password</label>
-                      <input type="text" placeholder="Leave blank to keep current password..." value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className="w-full bg-[#0b0f19] border border-[#1e293b] text-white rounded-lg px-3 py-2 text-sm placeholder-gray-600 focus:border-red-500 focus:outline-none" />
-                    </div>
-                    <button type="submit" className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold py-2.5 rounded-lg transition-colors mt-2 shadow-lg">Save Changes</button>
-                  </form>
-                ) : (
-                  <div>
-                    <h3 className="text-2xl font-bold text-white">{selectedStudent.name}</h3>
-                    <p className="text-gray-400 text-sm">{selectedStudent.email}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-8 overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                
-                {/* Free Navigation Buttons */}
-                <div className="flex items-center gap-4 bg-[#101524] px-4 py-2 rounded-xl border border-[#1e293b]">
-                  <button onClick={() => shiftMonth(-1)} className="p-1 text-gray-400 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                  <span className="text-white font-bold min-w-[120px] text-center">{monthNames[calMonth]} {calYear}</span>
-                  <button onClick={() => shiftMonth(1)} className="p-1 text-gray-400 hover:text-white"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
-                </div>
-
-                <div className="hidden sm:flex gap-3 text-xs text-gray-400 font-medium">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Present</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Absent</span>
-                </div>
-              </div>
-
-              {isModalLoading ? (
-                <div className="h-48 flex items-center justify-center text-gray-500">Loading calendar...</div>
-              ) : (
-                <div className="bg-[#101524] border border-[#1e293b] p-5 rounded-2xl">
-                  <div className="grid grid-cols-7 gap-2 mb-3 text-center text-xs font-bold text-gray-500 uppercase">
-                    <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
-                  </div>
-                  <div className="grid grid-cols-7 gap-2">
-                    {renderCalendar()}
-                  </div>
-                  <p className="text-center text-xs text-gray-500 mt-4">Tap a day to toggle: <span className="text-emerald-500 font-bold">Present</span> ➔ <span className="text-red-500 font-bold">Absent</span> ➔ <span className="text-gray-400 font-bold">Clear</span></p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-[#1e293b] bg-[#101524] flex gap-4 shrink-0 mt-auto">
-              <button
-                onClick={() => handleResetDevice(selectedStudent._id)}
-                disabled={!selectedStudent.deviceId}
-                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-[#2563eb]/10 text-[#5c98ff] border border-[#2563eb]/30 hover:bg-[#2563eb]/20"
-              >
-                {selectedStudent.deviceId ? 'Unlock Device' : 'Device Unlocked'}
-              </button>
-
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="flex-1 py-3 rounded-xl font-bold transition-all text-sm bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 hover:text-red-400"
-              >
-                Delete Data
-              </button>
-            </div>
-
-            {showDeleteModal && (
-              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in-up">
-                <div className="bg-[#151b2b] border border-[#1e293b] rounded-3xl w-full max-w-md shadow-2xl p-8 relative flex flex-col text-center">
-                  <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/30">
-                    <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Delete Data</h3>
-                  <p className="text-gray-400 text-sm mb-8">What data would you like to remove for <span className="font-bold text-white">{selectedStudent?.name}</span>?</p>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      onClick={async () => {
-                        await handleDeleteAttendanceOnly(selectedStudent._id);
-                        setShowDeleteModal(false);
-                      }}
-                      className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20"
-                    >
-                      Clear Attendance
-                    </button>
-                    <button
-                      onClick={async () => {
-                        await handleRemoveStudent(selectedStudent._id);
-                        setShowDeleteModal(false);
-                      }}
-                      className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]"
-                    >
-                      Delete Student
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteModal(false)}
-                      className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-[#1e293b] text-gray-300 hover:bg-gray-700 mt-2"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <StudentDetailsModal 
+          student={selectedStudent} 
+          onClose={() => setSelectedStudent(null)} 
+          onUpdate={fetchStudents} 
+        />
       )}
+
     </div>
   );
 }
