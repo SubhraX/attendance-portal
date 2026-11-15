@@ -7,6 +7,8 @@ export default function InstructorDashboard() {
   const { isDarkMode, toggleTheme } = useTheme();
   
   const [activeTab, setActiveTab] = useState('records'); 
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // NEW: Sidebar Toggle State
+  
   const [token, setToken] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [qrDuration, setQrDuration] = useState(120);
@@ -121,67 +123,77 @@ export default function InstructorDashboard() {
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
       
-      {/* Sidebar Navigation */}
-      <div className={`w-64 border-r flex flex-col p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
+      {/* Sidebar Navigation - NOW RETRACTABLE */}
+      <div className={`border-r flex flex-col p-6 shadow-2xl z-20 relative backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-24 items-center'} ${isDarkMode ? 'bg-[#10141d]/80 border-white/10' : 'bg-white/80 border-orange-200/50'}`}>
         
-        {/* Upper Left Logo & Title */}
-        <div className={`flex items-center gap-3 mb-10 pb-6 border-b ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
+        {/* Upper Left Logo & Title - Click to Toggle */}
+        <div 
+          onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+          className={`flex items-center mb-10 pb-6 border-b cursor-pointer group w-full ${isSidebarExpanded ? 'gap-3' : 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}
+          title="Toggle Sidebar"
+        >
           <img 
             src="/BITS_logo.png" 
             alt="BIT Mesra" 
-            className="w-12 h-12 object-contain drop-shadow-md bg-white/10 rounded-full p-1 shrink-0"
+            className="w-12 h-12 object-contain drop-shadow-md bg-white/10 rounded-full p-1 shrink-0 group-hover:scale-110 transition-transform"
           />
-          <div className="flex flex-col">
-            <h2 className={`text-lg font-extrabold tracking-wide uppercase leading-tight ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>
-              BIT Mesra
-            </h2>
-            <span className={`text-[10px] font-bold tracking-widest uppercase ${isDarkMode ? 'text-gray-400' : 'text-orange-600'}`}>
-              Faculty Panel
-            </span>
-          </div>
+          {isSidebarExpanded && (
+            <div className="flex flex-col animate-fade-in-up">
+              <h2 className={`text-lg font-extrabold tracking-wide uppercase leading-tight whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>
+                BIT Mesra
+              </h2>
+              <span className={`text-[10px] font-bold tracking-widest uppercase whitespace-nowrap ${isDarkMode ? 'text-gray-400' : 'text-orange-600'}`}>
+                Faculty Panel
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-col gap-4">
+        {/* Sidebar Buttons */}
+        <div className={`flex flex-col gap-4 w-full ${!isSidebarExpanded && 'items-center'}`}>
           <button 
             onClick={() => setActiveTab('generate')} 
-            className={`px-4 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-3 border ${activeTab === 'generate' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}
+            className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'generate' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}
+            title="Generate QR"
           >
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-            Generate QR
+            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Generate QR</span>}
           </button>
           
           <button 
             onClick={() => setActiveTab('records')} 
-            className={`px-4 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-3 border ${activeTab === 'records' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}
+            className={`py-3.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3' : 'w-12 justify-center'} ${activeTab === 'records' ? 'bg-orange-600 border-orange-600 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' : isDarkMode ? 'bg-black/20 border-orange-600/50 text-orange-500 hover:bg-orange-600/10' : 'bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100'}`}
+            title="Student Records"
           >
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            Student Records
+            {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Student Records</span>}
           </button>
         </div>
 
         {/* Theme Toggle Button */}
-        <div className={`mt-auto pt-6 border-t ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
+        <div className={`mt-auto pt-6 border-t w-full flex ${!isSidebarExpanded && 'justify-center'} ${isDarkMode ? 'border-white/10' : 'border-orange-200/50'}`}>
           <button
             onClick={toggleTheme}
-            className={`w-full px-4 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 border ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300 hover:bg-white/5' : 'bg-white/50 border-orange-200 text-orange-900 hover:bg-orange-50'}`}
+            className={`py-3 rounded-xl font-semibold transition-all duration-300 flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full justify-center' : 'w-12 justify-center'} ${isDarkMode ? 'bg-black/20 border-white/10 text-gray-300 hover:bg-white/5' : 'bg-white/50 border-orange-200 text-orange-900 hover:bg-orange-50'}`}
+            title={isDarkMode ? "Light Mode" : "Dark Mode"}
           >
             {isDarkMode ? (
               <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                Light Mode
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Light Mode</span>}
               </>
             ) : (
               <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                Dark Mode
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                {isSidebarExpanded && <span className="animate-fade-in-up whitespace-nowrap">Dark Mode</span>}
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Main Content Area - CENTERED FIX */}
-      <div className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto z-10 relative">
+      {/* Main Content Area */}
+      <div className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto z-10 relative transition-all duration-300">
         <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-4">
           
           {activeTab === 'generate' ? (
