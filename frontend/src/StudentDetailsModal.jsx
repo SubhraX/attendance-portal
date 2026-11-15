@@ -57,8 +57,21 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const payload = { name: editForm.name, email: editForm.email, stream: editForm.stream };
-      if (editForm.password) payload.password = editForm.password;
+      
+      // Construct payload for partial updates
+      const payload = { 
+        name: editForm.name, 
+        email: editForm.email, 
+        stream: editForm.stream 
+      };
+      
+      // FIX: If the user types a new password, send it. 
+      // If left blank, we pass the existing password data to satisfy strict backend PUT validations
+      if (editForm.password && editForm.password.trim() !== '') {
+        payload.password = editForm.password;
+      } else if (currentStudent.password) {
+        payload.password = currentStudent.password;
+      }
       
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
         method: 'PUT',
@@ -72,10 +85,12 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         setCurrentStudent({ ...currentStudent, name: editForm.name, email: editForm.email, stream: editForm.stream });
         onUpdate();
       } else {
-        showToast("Update failed.");
+        const data = await res.json();
+        showToast(data.message || "Update failed. Check required fields.");
       }
     } catch (error) {
       console.error("Error updating student:", error);
+      showToast("Network error. Could not update profile.");
     }
   };
 
@@ -177,12 +192,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const days = [];
     
-    // Empty cells
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className={`h-10 rounded-md ${isDarkMode ? 'bg-[#0f172a]/50' : 'bg-gray-50/50'}`}></div>);
     }
     
-    // Active cells
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
@@ -203,7 +216,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
   const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
   
-  const inputClass = `w-full border px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`;
+  const inputClass = `w-full border px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
   const modalBg = isDarkMode ? 'bg-[#1e293b] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
   const labelClass = `text-xs font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
 
@@ -246,7 +259,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   <select value={editForm.stream} onChange={e => setEditForm({ ...editForm, stream: e.target.value })} className={inputClass}>
                     {STREAMS.map(stream => <option key={stream} value={stream}>{stream}</option>)}
                   </select>
+                  
+                  {/* Password remains optional to the user visually, but we handle the backend requirement under the hood */}
                   <input type="text" placeholder="New Password (Optional)" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={inputClass} />
+                  
                   <button type="submit" className="bg-orange-600 text-white font-medium text-sm py-2 mt-2 rounded-lg hover:bg-orange-500 transition-colors">Save Changes</button>
                 </form>
               ) : (
