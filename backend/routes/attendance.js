@@ -253,7 +253,6 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
 
-    // CRITICAL FIX: Intercept 'clear' before it reaches Mongoose validation
     if (status === 'clear') {
       if (record) {
         await Attendance.deleteOne({ _id: record._id });
@@ -261,22 +260,26 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
       return res.status(200).json({ message: 'Attendance cleared for date' });
     }
 
+    // CRITICAL FIX: Make the manual token completely unique every time
+    // so MongoDB doesn't reject it as a duplicate QR scan!
+    const uniqueSafeToken = `MANUAL_${date}_${Date.now()}`;
+
     if (record) {
       record.status = status;
-      record.sessionToken = 'MANUAL_OVERRIDE';
+      record.sessionToken = uniqueSafeToken;
       await record.save();
     } else {
-      // Create new historical record safely
       const midDay = new Date(date + 'T12:00:00Z');
       record = await Attendance.create({
         student: req.params.id,
-        sessionToken: 'MANUAL_OVERRIDE',
+        sessionToken: uniqueSafeToken,
         status: status,
         ipAddress: 'MANUAL_OVERRIDE',
         createdAt: midDay,
-        date: midDay // Fallback just in case timestamps:true overwrites createdAt
+        date: midDay 
       });
     }
+    
     res.status(200).json({ message: 'Attendance updated manually', record });
   } catch (error) {
     console.error("Manual Override Error:", error);
