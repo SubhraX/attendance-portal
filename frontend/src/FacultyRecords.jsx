@@ -53,8 +53,11 @@ export default function FacultyRecords() {
       });
       const data = await res.json();
       if (res.ok) setStudents(data);
-    } catch (error) {}
-    setLoading(false);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredStudents = students.filter(s => {
@@ -69,8 +72,6 @@ export default function FacultyRecords() {
 
   return (
     <div className="w-full flex flex-col h-full relative z-10">
-      
-      {/* COMPACT HEADER - Added 'relative z-50' to fix dropdown overlap glitch */}
       <div className={`relative z-50 flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 p-5 md:p-6 rounded-2xl border shadow-xl backdrop-blur-xl ${glassPanel}`}>
         <div>
           <h2 className={`text-xl md:text-2xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
@@ -78,7 +79,6 @@ export default function FacultyRecords() {
         </div>
         
         <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-3 items-center">
-          
           <div className="relative w-full sm:w-44" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}

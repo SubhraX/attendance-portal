@@ -4,35 +4,39 @@ import QRCode from 'react-qr-code';
 export default function InstructorDashboard() {
   const [token, setToken] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const classId = 'CS101'; // Hardcoded for testing
+  const classId = 'CS101';
 
   const startSession = async () => {
     const authToken = localStorage.getItem('token');
     
-    const res = await fetch('http://localhost:5000/api/attendance/start', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
-      body: JSON.stringify({ classId })
-    });
-    
-    if(res.ok) {
-      const socket = new WebSocket('ws://localhost:5000');
-      socket.onopen = () => {
-        socket.send(JSON.stringify({ action: 'startRotation', classId }));
-      };
+    try {
+      const res = await fetch('http://localhost:5000/api/attendance/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ classId })
+      });
       
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'NEW_QR_TOKEN') {
-          setToken(data.token);
-          setTimeLeft(30); 
-        }
-      };
-    } else {
-      alert("Failed to start session. Ensure you are logged in as an Instructor.");
+      if (res.ok) {
+        const socket = new WebSocket('ws://localhost:5000');
+        socket.onopen = () => {
+          socket.send(JSON.stringify({ action: 'startRotation', classId }));
+        };
+        
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'NEW_QR_TOKEN') {
+            setToken(data.token);
+            setTimeLeft(30); 
+          }
+        };
+      } else {
+        console.error("Failed to start session. Ensure you are logged in as an Instructor.");
+      }
+    } catch (error) {
+      console.error("Session initialization error:", error);
     }
   };
 

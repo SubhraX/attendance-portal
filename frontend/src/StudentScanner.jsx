@@ -9,14 +9,12 @@ export default function StudentScanner() {
   const [facingMode, setFacingMode] = useState('environment'); 
   const [isCapturing, setIsCapturing] = useState(false);
   
-  // Samsung Fix State
   const [bestBackCameraId, setBestBackCameraId] = useState(null);
   const [cameraResolved, setCameraResolved] = useState(false);
   
   const isProcessingRef = useRef(false); 
   const navigate = useNavigate();
 
-  // Pinch-to-Zoom Refs
   const initialTouchDist = useRef(null);
   const currentZoom = useRef(1);
 
@@ -27,16 +25,13 @@ export default function StudentScanner() {
     }
   }, [isMarked, navigate]);
 
-  // Samsung WebRTC Logical Camera Fix
   useEffect(() => {
     let isMounted = true;
     const findOptimalCamera = async () => {
       try {
-        // Briefly grab the camera to force the browser to unlock the device hardware labels
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         const devices = await navigator.mediaDevices.enumerateDevices();
         
-        // Stop the temp stream instantly to free the hardware for the QR Scanner
         stream.getTracks().forEach(track => track.stop());
 
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
@@ -47,12 +42,11 @@ export default function StudentScanner() {
         );
 
         if (backCameras.length > 0) {
-          // Filter out logical multi-cameras and ultra-wide lenses that lack flash support
           let mainLens = backCameras.find(d => 
             !d.label.toLowerCase().includes('logical') && 
             !d.label.toLowerCase().includes('wide') && 
             !d.label.toLowerCase().includes('depth') &&
-            d.label.includes('0') // The physical main camera is usually tagged as 0
+            d.label.includes('0') 
           );
 
           if (!mainLens) mainLens = backCameras.find(d => !d.label.toLowerCase().includes('logical'));
@@ -60,7 +54,7 @@ export default function StudentScanner() {
           if (mainLens && isMounted) setBestBackCameraId(mainLens.deviceId);
         }
       } catch (err) {
-        console.warn("Could not optimize camera setup for this device:", err);
+        console.warn("Could not retrieve advanced camera constraints:", err);
       } finally {
         if (isMounted) setCameraResolved(true);
       }
@@ -84,7 +78,7 @@ export default function StudentScanner() {
         classId = qrData.classId;
         token = qrData.token;
       } catch (parseError) {
-        setMessage(`Format Error. QR contains: "${decodedText}"`);
+        setMessage(`Format Error. Invalid QR code structure.`);
         setTimeout(() => {
           setMessage('');
           setIsCapturing(false);
@@ -97,7 +91,7 @@ export default function StudentScanner() {
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/attendance/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ classId: classId, scannedToken: token })
+        body: JSON.stringify({ classId, scannedToken: token })
       });
 
       const data = await res.json();
@@ -144,7 +138,6 @@ export default function StudentScanner() {
     }
   };
 
-  // Pinch-to-Zoom Logic
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) {
       const dist = Math.hypot(
@@ -182,7 +175,7 @@ export default function StudentScanner() {
     if (success) {
       setIsFlashOn(newState);
     } else {
-      setMessage('Flash is not supported on this specific lens. Try flipping camera or switching devices.');
+      setMessage('Flash is not supported on this specific lens.');
       setTimeout(() => setMessage(''), 4000);
     }
   };
@@ -195,11 +188,9 @@ export default function StudentScanner() {
   };
 
   const cameraConstraints = useMemo(() => {
-    // If we successfully found the primary Samsung lens, force the scanner to use it
     if (facingMode === 'environment' && bestBackCameraId) {
       return { deviceId: { exact: bestBackCameraId }, width: { ideal: 1920 }, height: { ideal: 1080 } };
     }
-    // Standard fallback
     return { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } };
   }, [facingMode, bestBackCameraId]);
 
@@ -240,7 +231,6 @@ export default function StudentScanner() {
       `}</style>
 
       <div className="absolute left-0 w-full h-[135vh] -top-[25vh]">
-        {/* Only mount scanner once the hardware enumeration fix is complete */}
         {cameraResolved && !isProcessingRef.current && !isMarked && (
           <Scanner 
             onScan={(result) => {
@@ -262,7 +252,6 @@ export default function StudentScanner() {
           />
         )}
         
-        {/* Invisible Overlay for Pinch-to-Zoom & Target Reticle */}
         <div 
           className="absolute inset-0 z-30 flex items-center justify-center touch-none"
           onTouchStart={handleTouchStart}
@@ -282,7 +271,6 @@ export default function StudentScanner() {
         )}
       </div>
 
-      {/* Centered Camera Controls (Flash and Flip only) */}
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-16 z-50">
         <div className="flex flex-col items-center gap-2">
           <button onClick={toggleFlash} className={`w-14 h-14 backdrop-blur-lg border border-white/10 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg ${isFlashOn ? 'bg-white text-black' : 'bg-black/40 text-white hover:bg-white/10'}`}>

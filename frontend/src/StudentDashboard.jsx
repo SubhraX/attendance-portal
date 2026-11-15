@@ -52,9 +52,10 @@ export default function StudentDashboard() {
         setAttendanceData(dataMap);
       }
     } catch (error) {
-      console.error("Failed to fetch stats");
+      console.error("Failed to fetch stats:", error);
+    } finally {
+      setIsLoadingStats(false);
     }
-    setIsLoadingStats(false);
   };
 
   const shiftMonth = (offset) => {
@@ -72,10 +73,12 @@ export default function StudentDashboard() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-    } catch (e) {} 
-    
-    localStorage.clear();
-    navigate('/login');
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.clear();
+      navigate('/login');
+    }
   };
 
   const renderCalendar = () => {
@@ -113,15 +116,12 @@ export default function StudentDashboard() {
 
   return (
     <div 
-      className={`min-h-screen flex flex-col md:flex-row font-sans selection:bg-orange-600 selection:text-white bg-cover bg-center bg-no-repeat bg-fixed relative text-gray-200`}
+      className="min-h-screen flex flex-col md:flex-row font-sans selection:bg-orange-600 selection:text-white bg-cover bg-center bg-no-repeat bg-fixed relative text-gray-200"
       style={{ backgroundImage: bgImage }}
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
       
-      {/* HEADER / SIDEBAR */}
       <div className={`md:border-r border-b flex flex-row md:flex-col p-4 md:p-6 z-20 relative shrink-0 w-full md:w-auto ${isSidebarExpanded ? 'md:w-64' : 'md:w-24 md:items-center'} justify-between md:justify-start ${isDarkMode ? 'bg-[#10141d] border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
-        
-        {/* Logo & Title */}
         <div 
           onClick={() => { if(window.innerWidth >= 768) setIsSidebarExpanded(!isSidebarExpanded) }}
           className={`flex items-center md:mb-10 md:pb-6 md:border-b cursor-pointer shrink-0 ${isSidebarExpanded ? 'gap-3' : 'gap-3 md:justify-center w-full'} ${isDarkMode ? 'border-gray-800' : 'border-gray-300'}`}
@@ -142,7 +142,6 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* MOBILE ONLY: Theme & Logout Buttons */}
         <div className="flex md:hidden items-center gap-2">
           <button onClick={toggleTheme} className={`p-2.5 rounded-md border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}>
             {isDarkMode ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -153,7 +152,6 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        {/* DESKTOP ONLY: Sidebar Tabs */}
         <div className={`hidden md:flex flex-col gap-2 w-full ${!isSidebarExpanded && 'items-center'}`}>
           <button onClick={() => setActiveTab('scan')} className={`py-3 rounded-md font-bold text-sm flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${activeTab === 'scan' ? 'bg-orange-600 border-orange-600 text-white' : isDarkMode ? 'bg-transparent border-transparent text-gray-400 hover:bg-gray-800 hover:text-gray-200' : 'bg-transparent border-transparent text-gray-600 hover:bg-gray-200'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
@@ -165,7 +163,6 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        {/* DESKTOP ONLY: Theme & Logout (Bottom) */}
         <div className={`hidden md:flex mt-auto pt-6 border-t flex-col gap-2 w-full ${!isSidebarExpanded && 'items-center'} ${isDarkMode ? 'border-gray-800' : 'border-gray-300'}`}>
           <button onClick={toggleTheme} className={`py-3 rounded-md font-bold text-sm flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${isDarkMode ? 'bg-transparent border-transparent text-gray-400 hover:bg-gray-800 hover:text-gray-200' : 'bg-transparent border-transparent text-gray-600 hover:bg-gray-200'}`}>
             {isDarkMode ? <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -177,7 +174,6 @@ export default function StudentDashboard() {
             {isSidebarExpanded && <span className="whitespace-nowrap">Log Out</span>}
           </button>
           
-          {/* Institutional Dirt / Versioning */}
           {isSidebarExpanded && (
             <div className={`mt-2 text-[10px] text-center font-mono ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
               v2.1.4-stable
@@ -186,7 +182,6 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* MOBILE ONLY: Floating Bottom Panel */}
       <div className={`md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 flex items-center p-1 rounded-xl border z-50 ${isDarkMode ? 'bg-[#10141d] border-gray-800' : 'bg-white border-gray-300'}`}>
         <button onClick={() => setActiveTab('scan')} className={`px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 ${activeTab === 'scan' ? 'bg-orange-600 text-white' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
@@ -198,7 +193,6 @@ export default function StudentDashboard() {
         </button>
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 p-4 pb-28 md:p-10 flex flex-col overflow-y-auto z-10 relative">
         <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-2 md:mt-4">
           

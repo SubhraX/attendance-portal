@@ -44,8 +44,11 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           });
           setAttendanceData(dataMap);
         }
-      } catch (error) {}
-      setIsModalLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch student attendance:", error);
+      } finally {
+        setIsModalLoading(false);
+      }
     };
     fetchAttendance();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,18 +60,25 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       const token = localStorage.getItem('token');
       const payload = { name: editForm.name, email: editForm.email, stream: editForm.stream };
       if (editForm.password) payload.password = editForm.password;
+      
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
+      
       if (res.ok) {
-        showToast("Student updated!");
+        showToast("Student profile updated successfully.");
         setIsEditing(false);
         setCurrentStudent({ ...currentStudent, name: editForm.name, email: editForm.email, stream: editForm.stream });
         onUpdate();
-      } else showToast("Failed to update");
-    } catch (error) {}
+      } else {
+        showToast("Failed to update student profile.");
+      }
+    } catch (error) {
+      console.error("Error updating student:", error);
+      showToast("Network error. Could not update profile.");
+    }
   };
 
   const handleResetDevice = async () => {
@@ -80,15 +90,19 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         body: JSON.stringify({ studentId: currentStudent._id })
       });
       if (res.ok) {
-        showToast("Device unlocked.");
+        showToast("Device unlocked successfully.");
         setCurrentStudent({ ...currentStudent, deviceId: null });
         onUpdate();
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error unlocking device:", error);
+      showToast("Failed to unlock device.");
+    }
   };
 
   const handleDeleteAttendanceOnly = async () => {
-    if (!window.confirm("Wipe ALL records?")) return;
+    if (!window.confirm("Are you sure you want to wipe ALL attendance records for this student?")) return;
+    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${currentStudent._id}/records`, {
@@ -96,15 +110,19 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        showToast("Records wiped.");
+        showToast("Attendance records wiped.");
         setAttendanceData({});
         setShowDeleteModal(false);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error deleting attendance:", error);
+      showToast("Failed to delete attendance records.");
+    }
   };
 
   const handleRemoveStudent = async () => {
-    if (!window.confirm("CRITICAL: Delete student?")) return;
+    if (!window.confirm("Are you sure you want to completely remove this student? This action cannot be undone.")) return;
+    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
@@ -112,11 +130,14 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        showToast("Student removed.");
+        showToast("Student removed successfully.");
         onUpdate();
         onClose();
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error removing student:", error);
+      showToast("Failed to remove student.");
+    }
   };
 
   const shiftMonth = (offset) => {
@@ -131,6 +152,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const currentStatus = attendanceData[dateString];
     let newStatus;
+    
     if (!currentStatus) newStatus = 'present';
     else if (currentStatus === 'present') newStatus = 'absent';
     else newStatus = 'clear'; 
@@ -149,6 +171,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ date: dateString, status: newStatus })
       });
+      
       if (!res.ok) {
         showToast("Failed to update date.");
         setAttendanceData(prev => {
@@ -158,7 +181,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           return reverted;
         });
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error updating day status:", error);
+      showToast("Network error. Failed to update date.");
+    }
   };
 
   const renderCalendar = () => {

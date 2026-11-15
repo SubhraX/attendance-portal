@@ -26,6 +26,7 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
         showToast(data.message || 'Registration failed');
       }
     } catch (error) {
+      console.error("Registration error:", error);
       showToast("Error connecting to server");
     }
   };
