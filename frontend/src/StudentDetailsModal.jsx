@@ -44,24 +44,24 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStudent._id]);
 
+  // (Standard Handlers for Edit, Reset, Delete, Shift, and Click stay identical...)
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
       const payload = { name: editForm.name, email: editForm.email };
       if (editForm.password) payload.password = editForm.password;
-
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        showToast("Student updated successfully!");
+        showToast("Student updated!");
         setIsEditing(false);
         setCurrentStudent({ ...currentStudent, name: editForm.name, email: editForm.email });
         onUpdate();
-      } else showToast("Failed to update student");
+      } else showToast("Failed to update");
     } catch (error) {}
   };
 
@@ -74,7 +74,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         body: JSON.stringify({ studentId: currentStudent._id })
       });
       if (res.ok) {
-        showToast("Device unlocked successfully.");
+        showToast("Device unlocked.");
         setCurrentStudent({ ...currentStudent, deviceId: null });
         onUpdate();
       }
@@ -82,7 +82,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   };
 
   const handleDeleteAttendanceOnly = async () => {
-    if (!window.confirm("Are you sure you want to wipe ALL attendance records for this student?")) return;
+    if (!window.confirm("Wipe ALL records?")) return;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${currentStudent._id}/records`, {
@@ -90,7 +90,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        showToast("Attendance records wiped completely.");
+        showToast("Records wiped.");
         setAttendanceData({});
         setShowDeleteModal(false);
       }
@@ -98,7 +98,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   };
 
   const handleRemoveStudent = async () => {
-    if (!window.confirm("CRITICAL WARNING: This will permanently delete this student and ALL their attendance records. Proceed?")) return;
+    if (!window.confirm("CRITICAL: Delete student?")) return;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
@@ -106,7 +106,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        showToast("Student and records removed.");
+        showToast("Student removed.");
         onUpdate();
         onClose();
       }
@@ -124,7 +124,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const handleDayClick = async (day) => {
     const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const currentStatus = attendanceData[dateString];
-    
     let newStatus;
     if (!currentStatus) newStatus = 'present';
     else if (currentStatus === 'present') newStatus = 'absent';
@@ -145,7 +144,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         body: JSON.stringify({ date: dateString, status: newStatus })
       });
       if (!res.ok) {
-        showToast("Failed to update date manually.");
+        showToast("Failed to update date.");
         setAttendanceData(prev => {
           const reverted = { ...prev };
           if (currentStatus) reverted[dateString] = currentStatus;
@@ -166,15 +165,15 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
       
-      let styleClass = isDarkMode ? 'bg-[#0b0f19] border-[#1e293b] text-gray-500 hover:border-orange-500 hover:text-white' : 'bg-white border-orange-100 text-orange-800 hover:border-orange-400 hover:bg-orange-50'; 
+      let styleClass = isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/70 hover:text-orange-950'; 
       if (status === 'present') {
-        styleClass = isDarkMode ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-emerald-50 text-emerald-600 border-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]';
+        styleClass = 'bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] rounded-xl';
       } else if (status === 'absent') {
-        styleClass = isDarkMode ? 'bg-red-500/20 text-red-400 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-red-50 text-red-600 border-red-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]';
+        styleClass = 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] rounded-xl';
       }
 
       days.push(
-        <div key={day} onClick={() => handleDayClick(day)} className={`h-10 rounded-lg border flex items-center justify-center text-sm font-bold cursor-pointer transition-all ${styleClass}`}>
+        <div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-bold cursor-pointer transition-all ${styleClass}`}>
           {day}
         </div>
       );
@@ -182,103 +181,99 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     return days;
   };
 
-  const inputClass = `w-full rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none border ${isDarkMode ? 'bg-[#0b0f19] border-[#1e293b] text-white' : 'bg-[#fffaf0] border-orange-200 text-orange-950 font-medium focus:ring-2 focus:ring-orange-500/20'}`;
+  const glassInput = isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white/60 border-orange-200/50 text-orange-950';
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in-up ${isDarkMode ? 'bg-black/80' : 'bg-black/40'}`}>
-      <div className={`border rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh] ${isDarkMode ? 'bg-[#151b2b] border-[#1e293b]' : 'bg-white border-orange-200'}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl animate-fade-in-up ${isDarkMode ? 'bg-black/60' : 'bg-black/20'}`}>
+      
+      <div className={`border rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh] backdrop-blur-3xl ${isDarkMode ? 'bg-[#191e28]/95 border-white/10' : 'bg-white/95 border-orange-200'}`}>
         
-        <button onClick={onClose} className={`absolute top-4 right-4 p-2 rounded-full transition-colors z-10 ${isDarkMode ? 'text-gray-400 hover:text-white bg-[#0b0f19]' : 'text-orange-400 hover:text-orange-600 bg-orange-50'}`}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button onClick={onClose} className={`absolute top-6 right-6 p-2 rounded-full transition-colors z-10 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-400 hover:text-orange-600'}`}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
-        <div className={`p-8 border-b relative ${isDarkMode ? 'border-[#1e293b] bg-gradient-to-b from-[#101524] to-[#151b2b]' : 'border-orange-100 bg-gradient-to-b from-orange-50/50 to-white'}`}>
-          <button onClick={() => setIsEditing(!isEditing)} className={`absolute top-6 right-16 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${isDarkMode ? 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'}`}>
-            {isEditing ? 'Cancel Edit' : 'Edit Info'}
-          </button>
+        {/* Modal Header */}
+        <div className={`p-8 border-b flex items-start gap-5 ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
+          <div className="w-16 h-16 rounded-full bg-slate-400 overflow-hidden shrink-0 border-2 border-transparent">
+             {/* Using an avatar placeholder matching the image vibe */}
+             <img src={`https://ui-avatars.com/api/?name=${currentStudent.name}&background=ea580c&color=fff&font-size=0.4`} alt="Avatar" className="w-full h-full object-cover" />
+          </div>
+          <div className="pt-2">
+            <h3 className={`text-2xl font-extrabold tracking-wide uppercase ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.name}</h3>
+            <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-700/80'}`}>{currentStudent.email}</p>
+          </div>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-8 overflow-y-auto flex flex-col sm:flex-row gap-8">
           
-          <div className="flex items-center gap-5 mt-4">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-3xl shadow-inner shrink-0 ${isDarkMode ? 'bg-orange-500/20 text-orange-500' : 'bg-orange-100 text-orange-700'}`}>
-              {currentStudent.name.charAt(0).toUpperCase()}
+          {/* Left Column Text details matching photo */}
+          <div className="w-full sm:w-1/3 flex flex-col gap-6">
+            <div>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Profile</p>
+              <p className={`font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.name}</p>
+            </div>
+            <div>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Calendar</p>
+              <p className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{calYear}</p>
+            </div>
+            <div>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-emerald-500/70' : 'text-emerald-600/70'}`}>Manual Override</p>
+              <p className={`font-bold text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Present</p>
+            </div>
+            <div>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-red-500/70' : 'text-red-600/70'}`}>Absent</p>
+              <p className={`font-bold text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>Absent</p>
+            </div>
+          </div>
+
+          {/* Right Column Calendar matching photo */}
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-6">
+              <button onClick={() => shiftMonth(-1)} className={`p-1 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/40 hover:text-orange-950'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
+              <span className={`font-bold text-lg min-w-[120px] text-center ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{monthNames[calMonth]} {calYear}</span>
+              <button onClick={() => shiftMonth(1)} className={`p-1 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/40 hover:text-orange-950'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
             </div>
             
-            {isEditing ? (
-              <form onSubmit={handleEditSubmit} className="flex flex-col gap-3 w-full pr-2">
-                <div>
-                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Student Name</label>
-                  <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Email Address</label>
-                  <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Reset Password</label>
-                  <input type="text" placeholder="Leave blank to keep current..." value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={`${inputClass} focus:border-red-500`} />
-                </div>
-                <button type="submit" className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2.5 rounded-lg transition-colors mt-2 shadow-sm">Save Changes</button>
-              </form>
+            {isModalLoading ? (
+              <div className={`h-48 flex items-center justify-center font-bold ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Loading...</div>
             ) : (
               <div>
-                <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.name}</h3>
-                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-700'}`}>{currentStudent.email}</p>
+                <div className={`grid grid-cols-7 gap-1 mb-2 text-center text-sm font-bold ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>
+                  <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                </div>
+                <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-8 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className={`flex items-center gap-4 px-4 py-2 rounded-xl border ${isDarkMode ? 'bg-[#101524] border-[#1e293b]' : 'bg-white border-orange-200 shadow-sm'}`}>
-              <button onClick={() => shiftMonth(-1)} className={`p-1 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/40 hover:text-orange-950'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
-              <span className={`font-bold min-w-[120px] text-center ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{monthNames[calMonth]} {calYear}</span>
-              <button onClick={() => shiftMonth(1)} className={`p-1 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/40 hover:text-orange-950'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
-            </div>
-            <div className={`hidden sm:flex gap-3 text-xs font-bold ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Present</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Absent</span>
-            </div>
-          </div>
-
-          {isModalLoading ? (
-            <div className={`h-48 flex items-center justify-center font-bold ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Loading calendar...</div>
-          ) : (
-            <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-[#101524] border-[#1e293b]' : 'bg-[#fffaf0] border-orange-200'}`}>
-              <div className={`grid grid-cols-7 gap-2 mb-3 text-center text-xs font-bold uppercase ${isDarkMode ? 'text-gray-500' : 'text-orange-900/60'}`}>
-                <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
-              </div>
-              <div className="grid grid-cols-7 gap-2">{renderCalendar()}</div>
-              <p className={`text-center text-xs mt-4 font-medium ${isDarkMode ? 'text-gray-500' : 'text-orange-900/60'}`}>Tap a day to toggle: <span className={isDarkMode ? 'text-emerald-500 font-bold' : 'text-emerald-600 font-bold'}>Present</span> ➔ <span className="text-red-500 font-bold">Absent</span> ➔ <span className={isDarkMode ? 'text-gray-400 font-bold' : 'text-orange-900/40 font-bold'}>Clear</span></p>
-            </div>
-          )}
-        </div>
-
-        <div className={`p-6 border-t flex gap-4 shrink-0 mt-auto ${isDarkMode ? 'border-[#1e293b] bg-[#101524]' : 'border-orange-100 bg-orange-50/50'}`}>
-          <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed border active:scale-95 ${isDarkMode ? 'bg-orange-500/10 text-orange-500 border-orange-500/30 hover:bg-orange-500/20' : 'bg-white text-orange-700 border-orange-200 hover:bg-orange-50 shadow-sm'}`}>
-            {currentStudent.deviceId ? 'Unlock Device' : 'Device Unlocked'}
+        {/* Modal Actions Footer matching photo */}
+        <div className={`p-8 border-t flex gap-4 shrink-0 mt-auto items-center justify-center ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
+          <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`px-8 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed border active:scale-95 flex items-center gap-2 ${isDarkMode ? 'bg-transparent border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' : 'bg-transparent border-emerald-500/50 text-emerald-600 hover:bg-emerald-50'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Unlock Device
           </button>
-          <button onClick={() => setShowDeleteModal(true)} className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm border active:scale-95 ${isDarkMode ? 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}>
-            Delete Data
+          
+          <button onClick={() => setShowDeleteModal(true)} className={`px-8 py-3 rounded-xl font-bold transition-all text-sm border active:scale-95 flex items-center gap-2 ${isDarkMode ? 'bg-transparent border-red-500/50 text-red-400 hover:bg-red-500/10' : 'bg-transparent border-red-500/50 text-red-600 hover:bg-red-50'}`}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            Deletes
           </button>
         </div>
 
         {showDeleteModal && (
-          <div className={`fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in-up ${isDarkMode ? 'bg-black/80' : 'bg-black/40'}`}>
-            <div className={`border rounded-3xl w-full max-w-md shadow-2xl p-8 relative flex flex-col text-center ${isDarkMode ? 'bg-[#151b2b] border-[#1e293b]' : 'bg-white border-orange-200'}`}>
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border ${isDarkMode ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-100'}`}>
-                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-              </div>
-              <h3 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Delete Data</h3>
-              <p className={`text-sm mb-8 font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>What data would you like to remove for <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent?.name}</span>?</p>
+          <div className="absolute inset-0 z-[70] flex items-center justify-center p-8 bg-black/80 backdrop-blur-md animate-fade-in-up">
+            <div className={`border rounded-3xl w-full max-w-sm p-8 text-center ${isDarkMode ? 'bg-[#151b2b] border-[#1e293b]' : 'bg-white border-orange-200'}`}>
+              <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Delete Data</h3>
+              <p className={`text-sm mb-6 font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>Remove data for <span className="font-bold">{currentStudent?.name}</span>?</p>
               
               <div className="flex flex-col gap-3">
-                <button onClick={handleDeleteAttendanceOnly} className={`w-full py-3.5 rounded-xl font-bold transition-all text-sm border active:scale-95 ${isDarkMode ? 'bg-orange-500/10 text-orange-500 border-orange-500/30 hover:bg-orange-500/20' : 'bg-white text-orange-700 border-orange-200 hover:bg-orange-50 shadow-sm'}`}>
+                <button onClick={handleDeleteAttendanceOnly} className={`w-full py-3 rounded-xl font-bold transition-all text-sm border active:scale-95 ${isDarkMode ? 'bg-orange-500/10 text-orange-500 border-orange-500/30' : 'bg-white text-orange-700 border-orange-200'}`}>
                   Clear Attendance
                 </button>
-                <button onClick={handleRemoveStudent} className="w-full py-3.5 rounded-xl font-bold transition-all text-sm bg-red-600 hover:bg-red-500 text-white shadow-md active:scale-95">
+                <button onClick={handleRemoveStudent} className="w-full py-3 rounded-xl font-bold transition-all text-sm bg-red-600 text-white shadow-md active:scale-95">
                   Delete Student
                 </button>
-                <button onClick={() => setShowDeleteModal(false)} className={`w-full py-3.5 rounded-xl font-bold transition-all text-sm mt-2 active:scale-95 ${isDarkMode ? 'bg-[#1e293b] text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                <button onClick={() => setShowDeleteModal(false)} className={`w-full py-3 rounded-xl font-bold transition-all text-sm mt-2 active:scale-95 ${isDarkMode ? 'bg-[#1e293b] text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
                   Cancel
                 </button>
               </div>
