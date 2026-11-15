@@ -87,7 +87,8 @@ export default function Login() {
         className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url('/BITS.png')` }}
       >
-        <div className="absolute inset-0 bg-black/10"></div>
+        {/* Subtle dark overlay to make the pure white light-mode glass pop */}
+        <div className="absolute inset-0 bg-black/20"></div>
 
         {/* Updated: Transparent Frosted Glass Container */}
         <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-2xl bg-white/40 border border-white/60">
@@ -104,7 +105,7 @@ export default function Login() {
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-orange-950 mb-1 uppercase tracking-tight leading-tight">
                   Birla Institute of <span className="inline-block whitespace-nowrap">Technology, Mesra</span>
                 </h1>
-                <h2 className="text-sm sm:text-base font-bold text-orange-700 uppercase tracking-wider">University ERP System</h2>
+                <h2 className="text-sm sm:text-base font-bold text-orange-600 uppercase tracking-wider">University ERP System</h2>
               </div>
             </div>
             
@@ -130,6 +131,7 @@ export default function Login() {
             
             <div className="w-full max-w-[360px] mx-auto animate-fade-in-up">
               
+              {/* Role Toggle Switch */}
               <div className="flex w-full p-1 bg-white/60 border border-white/80 rounded-full mb-10 shadow-sm backdrop-blur-md">
                 <button
                   type="button"
