@@ -9,12 +9,12 @@ const router = express.Router();
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, stream } = req.body;
     
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({ name, email, password, role, stream });
     res.status(201).json({ message: 'User registered successfully', userId: user._id });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -101,13 +101,14 @@ router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
 // Edit a Student (Faculty Only)
 router.put('/student/:id', protect, instructorOnly, async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, stream } = req.body;
     const student = await User.findById(req.params.id);
     
     if (!student) return res.status(404).json({ message: 'Student not found' });
     
     if (name) student.name = name;
     if (email) student.email = email;
+    if (stream) student.stream = stream;
     if (password) student.password = password; // The pre-save hook will automatically hash the new password
     
     await student.save();

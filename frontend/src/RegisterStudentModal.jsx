@@ -7,7 +7,6 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
   const { isDarkMode } = useTheme();
   const { showToast } = useToast();
   
-  // Default to the first stream in the list
   const [regForm, setRegForm] = useState({ name: '', email: '', password: '', stream: STREAMS[0] });
 
   const handleRegisterStudent = async (e) => {
@@ -32,6 +31,7 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
   };
 
   const glassInput = `w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors border ${isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white/60 border-orange-200 text-orange-950 font-medium focus:ring-2 focus:ring-orange-500/20 placeholder-orange-900/40'}`;
+  const optionStyle = isDarkMode ? "bg-[#11161d] text-white" : "bg-white text-orange-950";
 
   return (
     <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-xl animate-fade-in-up ${isDarkMode ? 'bg-black/60' : 'bg-black/20'}`}>
@@ -54,7 +54,7 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
               className={`appearance-none cursor-pointer truncate pr-10 ${glassInput}`}
             >
               {STREAMS.map(stream => (
-                <option key={stream} value={stream} className="text-black bg-white">{stream}</option>
+                <option key={stream} value={stream} className={optionStyle}>{stream}</option>
               ))}
             </select>
             <svg className={`w-4 h-4 absolute right-4 top-4 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>

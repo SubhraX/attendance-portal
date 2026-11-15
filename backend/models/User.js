@@ -8,6 +8,8 @@ const userSchema = mongoose.Schema({
   role: { type: String, enum: ['student', 'instructor'], default: 'student' },
   // Used to prevent a student from logging in on multiple devices to proxy attendance
   deviceId: { type: String, default: null }, 
+  // ADDED: Stream tracking
+  stream: { type: String, default: 'Unassigned' }
 }, { timestamps: true });
 
 // Hash password before saving

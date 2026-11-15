@@ -11,7 +11,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Load existing stream or fallback to first stream in edit mode
   const [editForm, setEditForm] = useState({ 
     name: student.name, 
     email: student.email, 
@@ -20,7 +19,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   });
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [attendanceData, setAttendanceData] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -191,11 +189,12 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
   const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
   const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
+  
   const glassInput = isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white/60 border-orange-200/50 text-orange-950';
+  const optionStyle = isDarkMode ? "bg-[#11161d] text-white" : "bg-white text-orange-950";
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl animate-fade-in-up ${isDarkMode ? 'bg-black/60' : 'bg-black/20'}`}>
-      
       <div className={`border rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh] backdrop-blur-3xl ${isDarkMode ? 'bg-[#191e28]/95 border-white/10' : 'bg-white/95 border-orange-200'}`}>
         
         <button onClick={onClose} className={`absolute top-6 right-6 p-2 rounded-full transition-colors z-10 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-400 hover:text-orange-600'}`}>
@@ -232,7 +231,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                       className={`w-full appearance-none rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none border pr-8 truncate ${glassInput}`}
                     >
                       {STREAMS.map(stream => (
-                        <option key={stream} value={stream} className="text-black bg-white">{stream}</option>
+                        <option key={stream} value={stream} className={optionStyle}>{stream}</option>
                       ))}
                     </select>
                     <svg className={`w-4 h-4 absolute right-2.5 top-2.5 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>

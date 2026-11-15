@@ -3,10 +3,9 @@ import RegisterStudentModal from './RegisterStudentModal';
 import StudentDetailsModal from './StudentDetailsModal';
 import { useTheme } from './ThemeContext';
 
-// Updated to use Short Names (Acronyms)
 export const STREAMS = [
   "CSE",
-  "AIML",
+  "CSE(AIML)",
   "ECE",
   "EEE",
   "ME",
@@ -45,7 +44,6 @@ export default function FacultyRecords() {
     setLoading(false);
   };
 
-  // Filter by both Search Query AND Stream Selection
   const filteredStudents = students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           s.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -55,11 +53,10 @@ export default function FacultyRecords() {
 
   const glassPanel = isDarkMode ? "bg-[#161b26]/60 border-white/10" : "bg-white/60 border-orange-200/50";
   const glassInput = isDarkMode ? "bg-black/40 border-white/10 text-white" : "bg-white/60 border-orange-200/50 text-orange-950";
+  const optionStyle = isDarkMode ? "bg-[#11161d] text-white" : "bg-white text-orange-950";
 
   return (
     <div className="w-full flex flex-col h-full relative z-10">
-
-      {/* Directory Glass Header */}
       <div className={`flex flex-col xl:flex-row justify-between items-end xl:items-center mb-10 gap-6 p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${glassPanel}`}>
         <div>
           <h2 className={`text-3xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
@@ -68,16 +65,15 @@ export default function FacultyRecords() {
         
         <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-4 items-center">
           
-          {/* Stream Filter Dropdown */}
           <div className="relative w-full sm:w-44">
             <select
               value={selectedStream}
               onChange={(e) => setSelectedStream(e.target.value)}
               className={`w-full rounded-full pl-5 pr-10 py-3 focus:outline-none focus:border-orange-500 transition-colors border appearance-none cursor-pointer truncate font-bold ${glassInput}`}
             >
-              <option value="All Streams" className="text-black bg-white">All Streams</option>
+              <option value="All Streams" className={optionStyle}>All Streams</option>
               {STREAMS.map(stream => (
-                <option key={stream} value={stream} className="text-black bg-white">{stream}</option>
+                <option key={stream} value={stream} className={optionStyle}>{stream}</option>
               ))}
             </select>
             <svg className={`w-4 h-4 absolute right-4 top-4 pointer-events-none ${isDarkMode ? 'text-gray-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -124,7 +120,6 @@ export default function FacultyRecords() {
                 <h3 className={`font-extrabold text-xl truncate mb-1 ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{student.name.toUpperCase()}</h3>
                 <p className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>{student.email}</p>
                 
-                {/* Updated the Stream Badge to look cleaner with Short Names */}
                 <p className={`inline-flex w-max px-2.5 py-1 rounded-md text-[10px] uppercase font-extrabold truncate mb-6 mt-1 tracking-wider ${isDarkMode ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
                   {student.stream || 'No Stream'}
                 </p>
