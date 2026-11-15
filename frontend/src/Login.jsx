@@ -12,11 +12,9 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Handle dynamic title and initial splash screen timing
   useEffect(() => {
     document.title = "ERP Login - BIT Mesra";
     
-    // Start fade out after 1.2s, completely remove from DOM after 1.7s
     const fadeTimer = setTimeout(() => setIsFading(true), 1200);
     const removeTimer = setTimeout(() => setShowSplash(false), 1700);
     
@@ -53,11 +51,13 @@ export default function Login() {
           setIsLoading(false);
           return;
         }
+        
+        // CRITICAL FIX: Save the token AND the stringified user object for the router
         localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.user.role);
+        localStorage.setItem('user', JSON.stringify(data.user));
 
-        if (data.user.role === 'instructor') navigate('/instructor');
-        else navigate('/student');
+        if (data.user.role === 'instructor') navigate('/');
+        else navigate('/');
       } else {
         setStatus(`Error: ${data.message}`);
         setIsLoading(false);
@@ -70,13 +70,10 @@ export default function Login() {
 
   return (
     <>
-      {/* Initial Splash Loader Screen */}
       {showSplash && (
         <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#fffaf0] transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
           <div className="relative flex items-center justify-center">
-            {/* Radial Spinner */}
             <div className="absolute w-40 h-40 border-[4px] border-orange-100 border-t-orange-600 border-b-orange-500 rounded-full animate-spin"></div>
-            {/* Centered Logo */}
             <img 
               src="/BITS_logo.png" 
               alt="BITS Mesra Logo" 
@@ -87,20 +84,15 @@ export default function Login() {
         </div>
       )}
 
-      {/* Main App Content */}
       <div 
         className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url('/BITS.png')` }}
       >
         <div className="absolute inset-0 bg-black/20"></div>
 
-        {/* Main Glass Container */}
         <div className="relative z-10 w-full max-w-6xl flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md bg-[#fffaf0]/60 border border-orange-100/50">
           
-          {/* Left Side - Vision & Mission Panel */}
           <div className="w-full lg:w-[55%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-200/50">
-            
-            {/* Logo and Heading Container */}
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-8 text-center xl:text-left">
               <img 
                 src="/BITS_logo.png" 
@@ -132,7 +124,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Right Side - Interactive Login/Role Selection */}
           <div className="w-full lg:w-[45%] p-8 lg:p-12 flex flex-col justify-center bg-white/10">
             
             {!role ? (
