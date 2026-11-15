@@ -44,7 +44,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStudent._id]);
 
-  // (Standard Handlers for Edit, Reset, Delete, Shift, and Click stay identical...)
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -181,6 +180,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     return days;
   };
 
+  // Calculate live dynamic counts for the UI stats
+  const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
+  const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
+
   const glassInput = isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-white/60 border-orange-200/50 text-orange-950';
 
   return (
@@ -192,42 +195,67 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
-        {/* Modal Header */}
-        <div className={`p-8 border-b flex items-start gap-5 ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
-          <div className="w-16 h-16 rounded-full bg-slate-400 overflow-hidden shrink-0 border-2 border-transparent">
-             {/* Using an avatar placeholder matching the image vibe */}
+        {/* Modal Header WITH Edit Button */}
+        <div className={`p-8 border-b flex items-start gap-5 relative ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
+          
+          <button onClick={() => setIsEditing(!isEditing)} className={`absolute top-6 right-16 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${isDarkMode ? 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'}`}>
+            {isEditing ? 'Cancel Edit' : 'Edit Info'}
+          </button>
+
+          <div className="w-16 h-16 rounded-full bg-slate-400 overflow-hidden shrink-0 border-2 border-transparent mt-2">
              <img src={`https://ui-avatars.com/api/?name=${currentStudent.name}&background=ea580c&color=fff&font-size=0.4`} alt="Avatar" className="w-full h-full object-cover" />
           </div>
-          <div className="pt-2">
-            <h3 className={`text-2xl font-extrabold tracking-wide uppercase ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.name}</h3>
-            <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-700/80'}`}>{currentStudent.email}</p>
+          
+          <div className="pt-2 w-full pr-16">
+            {isEditing ? (
+              <form onSubmit={handleEditSubmit} className="flex flex-col gap-3 w-full animate-fade-in-up">
+                <div>
+                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Student Name</label>
+                  <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className={`w-full rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none border ${glassInput}`} />
+                </div>
+                <div>
+                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Email Address</label>
+                  <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className={`w-full rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none border ${glassInput}`} />
+                </div>
+                <div>
+                  <label className={`text-[10px] uppercase font-bold tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Reset Password</label>
+                  <input type="text" placeholder="Leave blank to keep current..." value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={`w-full rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none border ${glassInput}`} />
+                </div>
+                <button type="submit" className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2.5 rounded-lg transition-colors mt-2 shadow-sm">Save Changes</button>
+              </form>
+            ) : (
+              <div className="animate-fade-in-up">
+                <h3 className={`text-2xl font-extrabold tracking-wide uppercase truncate ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.name}</h3>
+                <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-gray-400' : 'text-orange-700/80'}`}>{currentStudent.email}</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Modal Body */}
         <div className="p-8 overflow-y-auto flex flex-col sm:flex-row gap-8">
           
-          {/* Left Column Text details matching photo */}
+          {/* Left Column Dynamic Stats */}
           <div className="w-full sm:w-1/3 flex flex-col gap-6">
             <div>
-              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Profile</p>
-              <p className={`font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.name}</p>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Student Status</p>
+              <p className={`font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{currentStudent.deviceId ? 'Locked to Device' : 'Active / Unlocked'}</p>
             </div>
             <div>
-              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Calendar</p>
-              <p className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{calYear}</p>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-emerald-500/70' : 'text-emerald-600/70'}`}>Total Present</p>
+              <p className={`font-extrabold text-2xl ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{presentCount}</p>
             </div>
             <div>
-              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-emerald-500/70' : 'text-emerald-600/70'}`}>Manual Override</p>
-              <p className={`font-bold text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>Present</p>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-red-500/70' : 'text-red-600/70'}`}>Total Absent</p>
+              <p className={`font-extrabold text-2xl ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{absentCount}</p>
             </div>
             <div>
-              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-red-500/70' : 'text-red-600/70'}`}>Absent</p>
-              <p className={`font-bold text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>Absent</p>
+              <p className={`text-xs uppercase tracking-wider font-bold mb-1 ${isDarkMode ? 'text-gray-500' : 'text-orange-900/50'}`}>Total Classes</p>
+              <p className={`font-bold text-sm ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>{presentCount + absentCount} Days Recorded</p>
             </div>
           </div>
 
-          {/* Right Column Calendar matching photo */}
+          {/* Right Column Calendar */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <button onClick={() => shiftMonth(-1)} className={`p-1 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-orange-900/40 hover:text-orange-950'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
@@ -248,7 +276,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           </div>
         </div>
 
-        {/* Modal Actions Footer matching photo */}
+        {/* Modal Actions Footer */}
         <div className={`p-8 border-t flex gap-4 shrink-0 mt-auto items-center justify-center ${isDarkMode ? 'border-white/10' : 'border-orange-100'}`}>
           <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`px-8 py-3 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed border active:scale-95 flex items-center gap-2 ${isDarkMode ? 'bg-transparent border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' : 'bg-transparent border-emerald-500/50 text-emerald-600 hover:bg-emerald-50'}`}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Unlock Device
