@@ -5,7 +5,7 @@ const Attendance = require('../models/Attendance');
 
 const router = express.Router();
 global.activeSessions = {}; 
-let lockedCampusIP = null; // Stores the faculty's network IP
+let lockedCampusIP = null; 
 
 // Lock Network Route
 router.post('/lock-network', protect, instructorOnly, (req, res) => {
@@ -25,7 +25,6 @@ router.post('/start', protect, instructorOnly, (req, res) => {
   const { classId, qrDuration } = req.body;
   if (!classId) return res.status(400).json({ message: 'classId is required' });
 
-  // Use the custom duration sent from the frontend, or default to 30s
   const durationMs = (qrDuration || 30) * 1000;
   const token = crypto.randomBytes(16).toString('hex');
   const expiresAt = Date.now() + durationMs; 
@@ -34,13 +33,13 @@ router.post('/start', protect, instructorOnly, (req, res) => {
     currentToken: token, 
     expiresAt,
     instructorIP: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress,
-    markedStudents: new Set() // Memory tracker for the live session
+    markedStudents: new Set() 
   };
 
   res.status(200).json({ message: 'Session started', token, expiresAt });
 });
 
-// Securely rotate the QR token and extend the expiration timer
+// Securely rotate the QR token
 router.post('/rotate', protect, instructorOnly, (req, res) => {
   const { classId, qrDuration } = req.body;
   const session = global.activeSessions[classId];
@@ -49,14 +48,13 @@ router.post('/rotate', protect, instructorOnly, (req, res) => {
 
   const durationMs = (qrDuration || 30) * 1000;
   
-  // Generate a brand new token and extend the session life
   session.currentToken = crypto.randomBytes(16).toString('hex');
   session.expiresAt = Date.now() + durationMs;
 
   res.status(200).json({ token: session.currentToken, expiresAt: session.expiresAt });
 });
 
-// Mark Attendance (With Mercy Overwrite for Current Day)
+// Mark Attendance
 router.post('/mark', protect, async (req, res) => {
   const { classId, scannedToken } = req.body;
   
@@ -70,7 +68,6 @@ router.post('/mark', protect, async (req, res) => {
     return res.status(400).json({ message: 'No active attendance session for this class' });
   }
 
-  // Instantly block if they already scanned during this exact live session instance
   const studentIdStr = req.user._id.toString();
   if (session.markedStudents.has(studentIdStr)) {
     return res.status(400).json({ message: 'Attendance already marked for this session' });
@@ -80,7 +77,6 @@ router.post('/mark', protect, async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired QR code' });
   }
 
-  // Same Wi-Fi Verification using Render's proxy headers
   if (lockedCampusIP) {
     const studentRawIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const studentIP = studentRawIP.split(',')[0].trim();
@@ -96,7 +92,6 @@ router.post('/mark', protect, async (req, res) => {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Look for an existing record for TODAY
     let record = await Attendance.findOne({
       student: req.user._id,
       createdAt: { $gte: startOfDay, $lte: endOfDay }
@@ -105,13 +100,11 @@ router.post('/mark', protect, async (req, res) => {
     const studentIP = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.socket.remoteAddress;
 
     if (record) {
-      // Mercy Rule: Overwrite existing 'absent' or older record for today to 'present'
       record.sessionToken = scannedToken;
       record.status = 'present';
       record.ipAddress = studentIP;
       await record.save();
     } else {
-      // Create new record
       record = await Attendance.create({
         student: req.user._id,
         sessionToken: scannedToken,
@@ -120,10 +113,8 @@ router.post('/mark', protect, async (req, res) => {
       });
     }
 
-    // Add student to memory lock to instantly block subsequent scans in THIS session
     session.markedStudents.add(studentIdStr);
 
-    // Broadcast to the faculty panel in real-time
     if (global.facultySockets && global.facultySockets[classId]) {
       global.facultySockets[classId].send(JSON.stringify({
         type: 'STUDENT_MARKED',
@@ -146,7 +137,6 @@ router.get('/history', protect, instructorOnly, async (req, res) => {
     const { date, classId } = req.query;
     let filter = {};
 
-    // Optional date filtering (Expects format: YYYY-MM-DD)
     if (date) {
       const startDate = new Date(date);
       startDate.setHours(0, 0, 0, 0);
@@ -157,7 +147,6 @@ router.get('/history', protect, instructorOnly, async (req, res) => {
       filter.createdAt = { $gte: startDate, $lte: endDate };
     }
     
-    // Fetch records, populate student profiles, and sort newest first
     const records = await Attendance.find(filter)
       .populate('student', 'name email deviceId')
       .sort({ createdAt: -1 });
@@ -167,7 +156,6 @@ router.get('/history', protect, instructorOnly, async (req, res) => {
       records 
     });
   } catch (error) {
-    console.error("History API Error:", error);
     res.status(500).json({ message: 'Server error fetching history', error: error.message });
   }
 });
@@ -182,7 +170,18 @@ router.get('/student/:id', protect, instructorOnly, async (req, res) => {
   }
 });
 
-// Stop Session and Mark Absentees (Prevents duplicate daily absentees)
+// NEW: Get logged-in student's OWN attendance (Student Panel)
+router.get('/my-records', protect, async (req, res) => {
+  try {
+    // req.user is automatically populated by the authMiddleware
+    const records = await Attendance.find({ student: req.user._id }).sort({ createdAt: 1 });
+    res.status(200).json(records);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching your attendance', error: error.message });
+  }
+});
+
+// Stop Session and Mark Absentees 
 router.post('/stop', protect, instructorOnly, async (req, res) => {
   const { classId } = req.body;
   const session = global.activeSessions[classId];
@@ -198,7 +197,6 @@ router.post('/stop', protect, instructorOnly, async (req, res) => {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Find who already has ANY record today (present or absent)
     const todayRecords = await Attendance.find({
       createdAt: { $gte: startOfDay, $lte: endOfDay }
     });
@@ -207,7 +205,6 @@ router.post('/stop', protect, instructorOnly, async (req, res) => {
     const absentRecords = [];
     
     allStudents.forEach(student => {
-      // Only create an absent record if they didn't scan AND don't already have a record for today
       if (!session.markedStudents.has(student._id.toString()) && !todayStudentIds.has(student._id.toString())) {
         absentRecords.push({
           student: student._id,
@@ -228,7 +225,7 @@ router.post('/stop', protect, instructorOnly, async (req, res) => {
   }
 });
 
-// Delete ONLY a specific student's attendance records (Keep the student account)
+// Delete ONLY a specific student's attendance records
 router.delete('/student/:id/records', protect, instructorOnly, async (req, res) => {
   try {
     await Attendance.deleteMany({ student: req.params.id });
@@ -238,7 +235,7 @@ router.delete('/student/:id/records', protect, instructorOnly, async (req, res) 
   }
 });
 
-// Manual override for a specific day's attendance (Faculty Only)
+// Manual override for a specific day's attendance
 router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => {
   try {
     const { date, status } = req.body;
@@ -260,8 +257,6 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
       return res.status(200).json({ message: 'Attendance cleared for date' });
     }
 
-    // CRITICAL FIX: Make the manual token completely unique every time
-    // so MongoDB doesn't reject it as a duplicate QR scan!
     const uniqueSafeToken = `MANUAL_${date}_${Date.now()}`;
 
     if (record) {
@@ -282,7 +277,6 @@ router.post('/student/:id/manual', protect, instructorOnly, async (req, res) => 
     
     res.status(200).json({ message: 'Attendance updated manually', record });
   } catch (error) {
-    console.error("Manual Override Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
