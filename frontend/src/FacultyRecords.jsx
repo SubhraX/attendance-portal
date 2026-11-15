@@ -38,9 +38,9 @@ export default function FacultyRecords() {
   const glassInput = isDarkMode ? "bg-black/40 border-white/10 text-white" : "bg-white/60 border-orange-200/50 text-orange-950";
 
   return (
-    <div className="w-full max-w-6xl flex flex-col h-full relative z-10">
+    <div className="w-full flex flex-col h-full relative z-10">
 
-      {/* Directory Glass Header (Matches screenshot layout perfectly) */}
+      {/* Directory Glass Header */}
       <div className={`flex flex-col lg:flex-row justify-between items-end lg:items-center mb-10 gap-6 p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${glassPanel}`}>
         <div>
           <h2 className={`text-3xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
@@ -48,7 +48,6 @@ export default function FacultyRecords() {
         </div>
         
         <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-4 items-center">
-          {/* Rounded Search Bar */}
           <div className="relative w-full sm:w-64">
             <input
               type="text"
@@ -71,7 +70,6 @@ export default function FacultyRecords() {
 
       <h3 className={`text-xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student cards</h3>
 
-      {/* Grid of Glass Student Cards */}
       {loading ? (
         <div className={`flex-1 flex items-center justify-center font-bold ${isDarkMode ? 'text-gray-400' : 'text-orange-900/50'}`}>Loading directory...</div>
       ) : (
