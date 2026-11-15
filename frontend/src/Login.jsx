@@ -5,7 +5,6 @@ export default function Login() {
   const [showSplash, setShowSplash] = useState(true);
   const [isFading, setIsFading] = useState(false);
   
-  // Default to student login to match the screenshot
   const [role, setRole] = useState('student'); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,16 +70,16 @@ export default function Login() {
   return (
     <>
       {showSplash && (
-        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#fffaf0] transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
           <div className="relative flex items-center justify-center">
-            <div className="absolute w-40 h-40 border-[4px] border-gray-200 border-t-[#9b1c1c] border-b-[#9b1c1c] rounded-full animate-spin"></div>
+            <div className="absolute w-40 h-40 border-[4px] border-orange-100 border-t-[#9b1c1c] border-b-[#9b1c1c] rounded-full animate-spin"></div>
             <img 
               src="/BITS_logo.png" 
               alt="BITS Mesra Logo" 
-              className="w-24 h-24 object-contain"
+              className="w-24 h-24 object-contain drop-shadow-lg"
             />
           </div>
-          <h2 className="mt-10 text-gray-800 font-bold tracking-widest uppercase font-mono text-sm">System Initialization</h2>
+          <h2 className="mt-10 text-orange-950 font-bold tracking-widest uppercase text-sm animate-pulse">Initializing ERP</h2>
         </div>
       )}
 
@@ -88,20 +87,21 @@ export default function Login() {
         className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url('/BITS.png')` }}
       >
-        <div className="absolute inset-0 bg-black/40"></div>
+        {/* Restored the previous dark blur overlay */}
+        <div className="absolute inset-0 bg-black/30"></div>
 
-        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-200">
+        {/* Restored premium glass container */}
+        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md bg-[#fffaf0]/80 border border-orange-100/50">
           
-          {/* Left Side - Institutional Info */}
-          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50">
+          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-200/50">
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-10 text-center xl:text-left">
               <img 
                 src="/BITS_logo.png" 
                 alt="BITS Mesra Logo" 
-                className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0 drop-shadow-md"
               />
               <div className="flex flex-col justify-center pt-1">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-1 uppercase tracking-tight leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-orange-950 mb-1 uppercase tracking-tight leading-tight">
                   Birla Institute of <span className="inline-block whitespace-nowrap">Technology, Mesra</span>
                 </h1>
                 <h2 className="text-sm sm:text-base font-bold text-[#9b1c1c] uppercase tracking-wider">University ERP System</h2>
@@ -109,15 +109,15 @@ export default function Login() {
             </div>
             
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wide">Institute Vision</h3>
-              <p className="text-gray-600 text-sm font-medium leading-relaxed">
+              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-300 pb-1 inline-block">Institute Vision</h3>
+              <p className="text-orange-950/80 text-sm font-medium leading-relaxed">
                 To become a globally recognized academic institution in consonance with the social, economic and ecological environment, striving continuously for excellence in education, research and technological service to the national needs.
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wide">Institute Mission</h3>
-              <ul className="list-decimal list-inside text-gray-600 text-sm font-medium leading-relaxed space-y-1">
+              <h3 className="text-sm font-bold text-orange-900 mb-2 uppercase tracking-wide border-b border-orange-300 pb-1 inline-block">Institute Mission</h3>
+              <ul className="list-decimal list-inside text-orange-950/80 text-sm font-medium leading-relaxed space-y-1">
                 <li>To educate students at Undergraduate, Post Graduate, Doctoral, and Post Doctoral levels to perform challenging engineering and managerial jobs.</li>
                 <li>To provide excellent research and development facilities.</li>
                 <li>To develop effective teaching and learning skills.</li>
@@ -125,20 +125,18 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Right Side - Interactive Login Portal */}
-          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white">
+          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white/20">
             
             <div className="w-full max-w-[360px] mx-auto animate-fade-in-up">
               
-              {/* Role Toggle Switch (Matches Screenshot) */}
-              <div className="flex w-full p-1 bg-white border border-gray-200 rounded-full mb-10 shadow-sm">
+              <div className="flex w-full p-1 bg-white/60 backdrop-blur-sm border border-orange-200/80 rounded-full mb-10 shadow-sm">
                 <button
                   type="button"
                   onClick={() => { setRole('student'); setStatus(''); }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                     role === 'student' 
                       ? 'bg-[#9b1c1c] text-white shadow-md' 
-                      : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                      : 'bg-transparent text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
                   }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -155,7 +153,7 @@ export default function Login() {
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
                     role === 'instructor' 
                       ? 'bg-[#9b1c1c] text-white shadow-md' 
-                      : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                      : 'bg-transparent text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
                   }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -167,10 +165,9 @@ export default function Login() {
               
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 
-                {/* Enrollment Number / Email Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-700">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-900/50">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                       <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h4" />
                     </svg>
@@ -178,16 +175,15 @@ export default function Login() {
                   <input 
                     type="text" 
                     placeholder="Enrollment Number / Email" 
-                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#9b1c1c] focus:ring-1 focus:ring-[#9b1c1c] transition-all font-semibold placeholder-gray-400 text-sm" 
+                    className="w-full bg-white/80 backdrop-blur-sm border border-orange-200/80 text-orange-950 rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#9b1c1c] focus:ring-1 focus:ring-[#9b1c1c] transition-all font-semibold placeholder-orange-900/40 text-sm" 
                     onChange={e => setEmail(e.target.value)} 
                     required 
                   />
                 </div>
                 
-                {/* Password Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-700">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-900/50">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
                     </svg>
@@ -195,14 +191,14 @@ export default function Login() {
                   <input 
                     type={showPassword ? "text" : "password"}
                     placeholder="Password" 
-                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl py-3.5 pl-12 pr-12 focus:outline-none focus:border-[#9b1c1c] focus:ring-1 focus:ring-[#9b1c1c] transition-all font-semibold placeholder-gray-400 text-sm" 
+                    className="w-full bg-white/80 backdrop-blur-sm border border-orange-200/80 text-orange-950 rounded-xl py-3.5 pl-12 pr-12 focus:outline-none focus:border-[#9b1c1c] focus:ring-1 focus:ring-[#9b1c1c] transition-all font-semibold placeholder-orange-900/40 text-sm" 
                     onChange={e => setPassword(e.target.value)} 
                     required 
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-800 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-orange-900/40 hover:text-orange-900 transition-colors"
                   >
                     {showPassword ? (
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -220,7 +216,7 @@ export default function Login() {
                 <button 
                   type="submit" 
                   disabled={isLoading}
-                  className={`mt-4 flex justify-center items-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all bg-[#9b1c1c] hover:bg-[#801515] active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`mt-4 flex justify-center items-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(155,28,28,0.3)] bg-[#9b1c1c] hover:bg-[#801515] active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   {isLoading ? (
                     <>
@@ -237,7 +233,7 @@ export default function Login() {
               </form>
               
               {status && (
-                <div className="mt-5 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm text-center font-semibold">
+                <div className="mt-5 p-3 bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-700 rounded-xl text-sm text-center font-bold shadow-sm">
                   {status}
                 </div>
               )}
