@@ -91,10 +91,10 @@ export default function Login() {
         <div className="absolute inset-0 bg-black/20"></div>
 
         {/* Clean, pure white light-mode glass container */}
-        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl bg-white/90 border border-white">
+        <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl bg-transparent border border-white">
           
           {/* Left Side */}
-          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-100 bg-white/50">
+          <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-orange-100 bg-transparent">
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-10 text-center xl:text-left">
               <img 
                 src="/BITS_logo.png" 
@@ -127,7 +127,7 @@ export default function Login() {
           </div>
 
           {/* Right Side - Interactive Portal */}
-          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white/70">
+          <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-transparent">
             
             <div className="w-full max-w-[360px] mx-auto animate-fade-in-up">
               
