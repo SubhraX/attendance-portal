@@ -289,28 +289,26 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   {currentStudent.name}
                 </h4>
 
-                {/* Gain & Lose Counters */}
+                {/* Gain & Lose Percentages */}
                 {(totalSessions > 0 || prevTotal > 0) && (
                   <div className="mt-3 flex items-center gap-2">
 
-                    {/* Gain Badge (Up) */}
+                    {/* Gain Badge (Present %) */}
                     <span className={`flex items-center gap-1.5 text-sm font-black px-3 py-1 rounded-full ${isDarkMode ? 'bg-[#112a2c] text-[#00d789]' : 'bg-emerald-100 text-emerald-700'
                       }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {/* Thicker, flatter chevron up */}
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M4.5 15.75l7.5-7.5 7.5 7.5"></path>
                       </svg>
-                      {presentCount}
+                      {totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0}%
                     </span>
 
-                    {/* Lose Badge (Down) */}
+                    {/* Lose Badge (Absent %) */}
                     <span className={`flex items-center gap-1.5 text-sm font-black px-3 py-1 rounded-full ${isDarkMode ? 'bg-[#311f26] text-[#ff4b4b]' : 'bg-red-100 text-red-700'
                       }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {/* Thicker, flatter chevron down */}
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
                       </svg>
-                      {absentCount}
+                      {totalSessions > 0 ? Math.round((absentCount / totalSessions) * 100) : 0}%
                     </span>
 
                   </div>
