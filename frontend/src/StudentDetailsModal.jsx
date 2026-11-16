@@ -11,6 +11,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [animateGraph, setAnimateGraph] = useState(false);
   
   const [editForm, setEditForm] = useState({ 
     name: student.name, 
@@ -54,6 +55,13 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     fetchAttendance();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStudent._id]);
+
+  // Re-trigger SVG animation whenever the calendar month shifts
+  useEffect(() => {
+    setAnimateGraph(false);
+    const timer = setTimeout(() => setAnimateGraph(true), 50);
+    return () => clearTimeout(timer);
+  }, [calMonth, calYear, currentStudent._id]);
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -187,11 +195,14 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   };
 
-  // Extract monthly trend data for the graph (last 6 months leading up to currently selected calendar month)
+  // Fixed Trend Calculation with Details Mapping
   const getMonthlyTrend = () => {
     const trend = [];
     const labels = [];
+    const details = [];
     const now = new Date(calYear, calMonth, 1);
+    
+    let lastValid = 0; // Fixed: Default to 0% instead of 100%
     
     for (let i = 5; i >= 0; i--) {
       const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -207,16 +218,19 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           if (status === 'present') p++;
         }
       });
-      trend.push(t > 0 ? Math.round((p / t) * 100) : null);
+      
+      if (t > 0) {
+        const pct = Math.round((p / t) * 100);
+        trend.push(pct);
+        lastValid = pct;
+        details.push(`${p}/${t} cls`);
+      } else {
+        trend.push(lastValid);
+        details.push(`0/0 cls`);
+      }
     }
     
-    let lastValid = 100;
-    const filledData = trend.map(val => {
-      if (val !== null) lastValid = val;
-      return lastValid;
-    });
-    
-    return { data: filledData, labels };
+    return { data: trend, labels, details };
   };
 
   const renderCalendar = () => {
@@ -259,18 +273,20 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   // SVG Chart Dimensions & Data
   const trendInfo = getMonthlyTrend();
   const svgWidth = 600;
-  const svgHeight = 140;
-  const paddingX = 30;
-  const paddingY = 25;
+  const svgHeight = 170; // Increased to fit details below labels
+  const paddingX = 40;
+  const paddingY = 40; // Increased to fit tooltips above nodes
   const chartW = svgWidth - paddingX * 2;
-  const chartH = svgHeight - paddingY * 2;
+  const chartH = svgHeight - paddingY - 40; 
+  
   const pointCoords = trendInfo.data.map((val, i) => {
     const x = paddingX + (i * (chartW / (trendInfo.data.length - 1)));
     const y = paddingY + chartH - (val / 100 * chartH);
     return { x, y };
   });
+  
   const pathString = pointCoords.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
-  const areaString = `${pathString} L ${svgWidth - paddingX} ${svgHeight - paddingY} L ${paddingX} ${svgHeight - paddingY} Z`;
+  const areaString = `${pathString} L ${svgWidth - paddingX} ${svgHeight - 40} L ${paddingX} ${svgHeight - 40} Z`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm p-4 md:p-8">
@@ -431,7 +447,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     </linearGradient>
                   </defs>
                   
-                  {/* Grid lines */}
+                  {/* Horizontal Grid lines */}
                   {[0, 25, 50, 75, 100].map(line => {
                     const yPos = paddingY + chartH - (line/100 * chartH);
                     return (
@@ -446,38 +462,67 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     </text>
                   ))}
                   
-                  {/* Gradients and Lines */}
+                  {/* Animated Gradient Area */}
                   {trendInfo.data.length > 1 && (
-                    <>
-                      <path d={areaString} fill="url(#chartGradient)" />
-                      <path d={pathString} fill="none" stroke="#f43f5e" strokeWidth="2.5" />
-                    </>
+                    <path 
+                      d={areaString} 
+                      fill="url(#chartGradient)" 
+                      style={{
+                        opacity: animateGraph ? 1 : 0,
+                        transition: 'opacity 1s ease-in-out',
+                        transitionDelay: '0.2s'
+                      }}
+                    />
+                  )}
+
+                  {/* Animated Stroke Line */}
+                  {trendInfo.data.length > 1 && (
+                    <path 
+                      d={pathString} 
+                      fill="none" 
+                      stroke="#f43f5e" 
+                      strokeWidth="2.5" 
+                      strokeDasharray={2000}
+                      strokeDashoffset={animateGraph ? 0 : 2000}
+                      style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                    />
                   )}
                   
-                  {/* Data Points & X Axis Labels */}
+                  {/* Data Points, Vertical Guidelines, & X Axis Labels (Staggered Fade In) */}
                   {pointCoords.map((pt, i) => (
-                    <g key={i}>
-                      <line x1={pt.x} y1={paddingY} x2={pt.x} y2={svgHeight - paddingY} stroke={isDarkMode ? "#334155" : "#e2e8f0"} strokeWidth="0.5" />
+                    <g 
+                      key={i}
+                      style={{
+                        opacity: animateGraph ? 1 : 0,
+                        transition: 'opacity 0.5s ease-out',
+                        transitionDelay: `${0.4 + (i * 0.1)}s` 
+                      }}
+                    >
+                      {/* Vertical Dashed Guideline */}
+                      <line x1={pt.x} y1={paddingY} x2={pt.x} y2={svgHeight - 40} stroke={isDarkMode ? "#334155" : "#e2e8f0"} strokeWidth="0.5" strokeDasharray="4 4" />
+                      
+                      {/* Node Circle */}
                       <circle cx={pt.x} cy={pt.y} r="4.5" fill={isDarkMode ? "#1e293b" : "#ffffff"} stroke="#f43f5e" strokeWidth="2.5" />
-                      <text x={pt.x} y={svgHeight - 5} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="10" textAnchor="middle" fontWeight="bold">
+                      
+                      {/* Month Label */}
+                      <text x={pt.x} y={svgHeight - 22} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="10" textAnchor="middle" fontWeight="bold">
                         {trendInfo.labels[i]}
                       </text>
-                    </g>
-                  ))}
-                  
-                  {/* Current Value Tooltip Label (last point) */}
-                  {pointCoords.length > 0 && (() => {
-                    const lastI = pointCoords.length - 1;
-                    const pt = pointCoords[lastI];
-                    return (
-                      <g>
-                        <rect x={pt.x - 22} y={pt.y - 28} width="44" height="18" rx="6" fill={isDarkMode ? "#334155" : "#475569"} />
-                        <text x={pt.x} y={pt.y - 15} fill="#ffffff" fontSize="10" fontWeight="bold" textAnchor="middle">
-                          {trendInfo.data[lastI]}%
+                      
+                      {/* Class Details (e.g. 5/6 cls) */}
+                      <text x={pt.x} y={svgHeight - 8} fill={isDarkMode ? "#64748b" : "#94a3b8"} fontSize="8" textAnchor="middle">
+                        {trendInfo.details[i]}
+                      </text>
+
+                      {/* Percentage Tooltip Above Node */}
+                      <g transform={`translate(${pt.x}, ${pt.y - 18})`}>
+                        <rect x="-16" y="-12" width="32" height="15" rx="4" fill={isDarkMode ? "#334155" : "#475569"} />
+                        <text x="0" y="0" fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
+                          {trendInfo.data[i]}%
                         </text>
                       </g>
-                    )
-                  })()}
+                    </g>
+                  ))}
                 </svg>
               </div>
             </div>
