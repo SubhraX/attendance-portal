@@ -149,7 +149,7 @@ export default function InstructorDashboard() {
   };
 
   const bgImage = isDarkMode ? "url('/BITS_Night.png')" : "url('/BITS.png')";
-  const overlayClass = isDarkMode ? "bg-[#0b101a]/90 backdrop-blur-[2px]" : "bg-[#fffaf0]/90 backdrop-blur-[2px]";
+  const overlayClass = isDarkMode ? "bg-[#0b101a]/90 backdrop-blur-[1px]" : "bg-[#fffaf0]/90 backdrop-blur-[1px]";
   const panelClass = isDarkMode ? "bg-[#161b26] border-gray-800" : "bg-white border-gray-200";
   const inputClass = isDarkMode ? "bg-[#0b101a] border-gray-800 text-gray-200" : "bg-gray-50 border-gray-300 text-gray-900";
 
