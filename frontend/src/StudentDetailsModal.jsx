@@ -180,7 +180,13 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const days = [];
-    for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} className="h-10 rounded-md bg-transparent"></div>);
+    
+    // Pad start of month
+    for (let i = 0; i < firstDay; i++) {
+        days.push(<div key={`empty-${i}`} className="h-10 rounded-md bg-transparent"></div>);
+    }
+    
+    // Render actual days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
@@ -189,6 +195,14 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       else if (status === 'absent') styleClass = 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 shadow-[inset_0_0_8px_rgba(239,68,68,0.15)]';
       days.push(<div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-bold rounded-md cursor-pointer transition-colors ${styleClass}`}>{day}</div>);
     }
+
+    // Pad end of month to force exactly 42 cells (6 rows)
+    const totalCells = firstDay + daysInMonth;
+    const remainingCells = 42 - totalCells;
+    for (let i = 0; i < remainingCells; i++) {
+        days.push(<div key={`empty-end-${i}`} className="h-10 rounded-md bg-transparent"></div>);
+    }
+
     return days;
   };
 
