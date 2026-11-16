@@ -74,7 +74,7 @@ export default function FacultyRecords() {
     <div className="w-full flex flex-col h-full relative z-10">
       <div className={`relative z-50 flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 p-5 md:p-6 rounded-2xl border shadow-xl backdrop-blur-xl ${glassPanel}`}>
         <div>
-          <h2 className={`text-xl md:text-2xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Directory</h2>
+          <h2 className={`text-xl md:text-2xl font-extrabold tracking-wide ${isDarkMode ? 'text-white' : 'text-orange-950'}`}>Student Records</h2>
           <p className={`text-xs mt-0.5 font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/70'}`}>Information for all enrolled students.</p>
         </div>
         
@@ -149,7 +149,7 @@ export default function FacultyRecords() {
       </div>
 
       {loading ? (
-        <div className={`flex-1 flex items-center justify-center font-bold text-sm ${isDarkMode ? 'text-gray-400' : 'text-orange-900/50'}`}>Loading directory...</div>
+        <div className={`flex-1 flex items-center justify-center font-bold text-sm ${isDarkMode ? 'text-gray-400' : 'text-orange-900/50'}`}>Loading data...</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-10">
           {filteredStudents.length === 0 ? (
