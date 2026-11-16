@@ -229,29 +229,33 @@ export default function FacultyRecords() {
               >
                 <div className={`absolute top-0 right-0 w-2 h-full transition-colors ${student.deviceId ? 'bg-emerald-500/80 group-hover:bg-emerald-500' : 'bg-orange-500/80 group-hover:bg-orange-500'}`}></div>
                 
-                <p className={`text-[10px] font-bold mb-1 uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>Student {idx + 1}</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  {student.deviceId ? (
+                    <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="5" y="11" width="14" height="10" rx="2" ry="2" strokeWidth="2"></rect>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 0110 0v4"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="5" y="11" width="14" height="10" rx="2" ry="2" strokeWidth="2"></rect>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 019.9-1"></path>
+                    </svg>
+                  )}
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>
+                    Student {idx + 1}
+                  </p>
+                </div>
+                
                 <h3 className={`font-extrabold text-base truncate mb-0.5 transition-colors ${isDarkMode ? 'text-white group-hover:text-orange-400' : 'text-orange-950 group-hover:text-orange-600'}`}>{student.name.toUpperCase()}</h3>
                 <p className={`text-[11px] truncate font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>{student.email}</p>
                 
-                <div className="flex flex-wrap items-center gap-1.5 mb-4 mt-2">
+                <div className="flex flex-wrap items-center gap-1.5 mt-3">
                   <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${isDarkMode ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
                     {student.stream || 'Unassigned'}
                   </span>
                   {student.section && student.section !== 'Unassigned' && (
                     <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${isDarkMode ? 'bg-gray-800 text-gray-300 border border-gray-700' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
                       Sec {student.section}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="mt-auto">
-                  {student.deviceId ? (
-                    <span className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 px-3 py-1.5 rounded-lg flex items-center justify-between text-[11px] font-bold transition-colors group-hover:bg-emerald-500/20">
-                      Locked to Device <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    </span>
-                  ) : (
-                    <span className="w-full bg-orange-500/10 border border-orange-500/30 text-orange-500 px-3 py-1.5 rounded-lg flex items-center justify-between text-[11px] font-bold transition-colors group-hover:bg-orange-500/20">
-                      Active Access <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                     </span>
                   )}
                 </div>
