@@ -24,11 +24,10 @@ export default function FacultyRecords() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Updated filtering state to track Stream and Section independently
   const [selectedFilter, setSelectedFilter] = useState({ stream: 'All Streams', section: 'All' });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [hoveredStream, setHoveredStream] = useState(null);
-  const [hoverTop, setHoverTop] = useState(0); // Tracks dynamic Y-offset for side menu
+  const [hoverTop, setHoverTop] = useState(0); 
   
   const dropdownRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -85,7 +84,6 @@ export default function FacultyRecords() {
 
   const handleMouseEnter = (e, stream) => {
     setHoveredStream(stream);
-    // Calculate precise vertical offset relative to the scrollable container
     if (scrollContainerRef.current) {
       const offset = e.currentTarget.offsetTop - scrollContainerRef.current.scrollTop;
       setHoverTop(offset);
@@ -96,7 +94,6 @@ export default function FacultyRecords() {
   const glassInput = isDarkMode ? "bg-black/40 border-white/10 text-white" : "bg-white/60 border-orange-200/50 text-orange-950";
   const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full ${isDarkMode ? '[&::-webkit-scrollbar-thumb]:bg-gray-700 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600' : '[&::-webkit-scrollbar-thumb]:bg-gray-300 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400'}`;
 
-  // Helper for dynamic button label
   const displayLabel = selectedFilter.stream === 'All Streams' 
     ? 'All Streams' 
     : selectedFilter.section === 'All' 
@@ -127,13 +124,11 @@ export default function FacultyRecords() {
               </svg>
             </button>
 
-            {/* Dropdown Container */}
             <div 
               className={`absolute z-50 w-full mt-1.5 rounded-xl border shadow-2xl backdrop-blur-2xl transition-all duration-300 origin-top ${
                 isDropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
               } ${isDarkMode ? 'bg-[#1a2130]/95 border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white/95 border-orange-200 shadow-[0_10px_40px_rgba(234,88,12,0.15)]'}`}
             >
-              {/* Scrollable Parent */}
               <div ref={scrollContainerRef} className={`max-h-56 overflow-y-auto py-1.5 flex flex-col relative ${customScrollbar}`}>
                 <div
                   onClick={() => { setSelectedFilter({ stream: 'All Streams', section: 'All' }); setIsDropdownOpen(false); setHoveredStream(null); }}
@@ -164,7 +159,6 @@ export default function FacultyRecords() {
                 ))}
               </div>
 
-              {/* Absolutely Positioned Side Menu */}
               {isDropdownOpen && hoveredStream && STREAM_SECTIONS[hoveredStream]?.length > 0 && (
                 <div 
                   className={`absolute z-50 left-[102%] w-36 rounded-xl border shadow-2xl backdrop-blur-2xl py-1.5 overflow-hidden animate-fade-in-up ${
@@ -221,7 +215,7 @@ export default function FacultyRecords() {
       </div>
 
       {loading ? (
-        <div className={`flex-1 flex items-center justify-center font-bold text-sm ${isDarkMode ? 'text-gray-400' : 'text-orange-900/50'}`}>Loading directory...</div>
+        <div className={`flex-1 flex items-center justify-center font-bold text-sm ${isDarkMode ? 'text-gray-400' : 'text-orange-900/50'}`}>Loading data...</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-10">
           {filteredStudents.length === 0 ? (
@@ -239,9 +233,16 @@ export default function FacultyRecords() {
                 <h3 className={`font-extrabold text-base truncate mb-0.5 transition-colors ${isDarkMode ? 'text-white group-hover:text-orange-400' : 'text-orange-950 group-hover:text-orange-600'}`}>{student.name.toUpperCase()}</h3>
                 <p className={`text-[11px] truncate font-medium ${isDarkMode ? 'text-gray-400' : 'text-orange-900/60'}`}>{student.email}</p>
                 
-                <p className={`inline-flex w-max px-2 py-0.5 rounded-md text-[9px] uppercase font-bold truncate mb-4 mt-2 tracking-wide ${isDarkMode ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
-                  {student.stream || 'Unassigned'} {student.section && student.section !== 'Unassigned' ? `- ${student.section}` : ''}
-                </p>
+                <div className="flex flex-wrap items-center gap-1.5 mb-4 mt-2">
+                  <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${isDarkMode ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
+                    {student.stream || 'Unassigned'}
+                  </span>
+                  {student.section && student.section !== 'Unassigned' && (
+                    <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${isDarkMode ? 'bg-gray-800 text-gray-300 border border-gray-700' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                      Sec {student.section}
+                    </span>
+                  )}
+                </div>
                 
                 <div className="mt-auto">
                   {student.deviceId ? (
