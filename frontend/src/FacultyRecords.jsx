@@ -3,18 +3,19 @@ import RegisterStudentModal from './RegisterStudentModal';
 import StudentDetailsModal from './StudentDetailsModal';
 import { useTheme } from './ThemeContext';
 
-export const STREAMS = [
-  "CSE",
-  "CSE(AIML)",
-  "ECE",
-  "EEE",
-  "ME",
-  "CE",
-  "PIE",
-  "Chemical",
-  "BT",
-  "FET"
-];
+export const STREAM_SECTIONS = {
+  "CSE": ["G", "H", "I", "J"],
+  "CSE(AIML)": ["K"],
+  "ECE": ["A", "B", "C", "D"],
+  "EEE": ["E", "F"],
+  "ME": ["R", "S"],
+  "CE": ["M"],
+  "PIE": ["L"],
+  "Chemical": ["N", "O"],
+  "BT": ["P"],
+  "FET": ["Q"]
+};
+export const STREAMS = Object.keys(STREAM_SECTIONS);
 
 export default function FacultyRecords() {
   const { isDarkMode } = useTheme();
@@ -25,8 +26,9 @@ export default function FacultyRecords() {
   
   const [selectedStream, setSelectedStream] = useState('All Streams');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [hoveredStream, setHoveredStream] = useState(null);
   
+  const dropdownRef = useRef(null);
   const [showRegModal, setShowRegModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -38,6 +40,7 @@ export default function FacultyRecords() {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+        setHoveredStream(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -63,12 +66,26 @@ export default function FacultyRecords() {
   const filteredStudents = students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           s.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStream = selectedStream === 'All Streams' || s.stream === selectedStream;
+    
+    let matchesStream = false;
+    if (selectedStream === 'All Streams') {
+      matchesStream = true;
+    } else if (STREAMS.includes(selectedStream)) {
+      // Matches the base stream OR any section within that stream
+      matchesStream = s.stream === selectedStream || (s.stream && s.stream.startsWith(`${selectedStream}-`));
+    } else {
+      // Matches a specific section exactly
+      matchesStream = s.stream === selectedStream;
+    }
+    
     return matchesSearch && matchesStream;
   });
 
   const glassPanel = isDarkMode ? "bg-[#161b26]/60 border-white/10" : "bg-white/60 border-orange-200/50";
   const glassInput = isDarkMode ? "bg-black/40 border-white/10 text-white" : "bg-white/60 border-orange-200/50 text-orange-950";
+  
+  // Custom scrollbar utility classes for a slick, modern design
+  const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full ${isDarkMode ? '[&::-webkit-scrollbar-thumb]:bg-gray-700 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600' : '[&::-webkit-scrollbar-thumb]:bg-gray-300 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400'}`;
 
   return (
     <div className="w-full flex flex-col h-full relative z-10">
@@ -79,7 +96,9 @@ export default function FacultyRecords() {
         </div>
         
         <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-3 items-center">
-          <div className="relative w-full sm:w-44" ref={dropdownRef}>
+          
+          {/* Custom Dropdown */}
+          <div className="relative w-full sm:w-44" ref={dropdownRef} onMouseLeave={() => setHoveredStream(null)}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={`w-full rounded-xl pl-4 pr-3 py-2.5 focus:outline-none transition-all duration-300 border flex items-center justify-between font-bold text-xs md:text-sm ${glassInput} ${isDropdownOpen ? 'border-orange-500 ring-1 ring-orange-500/20' : 'hover:border-orange-400/50'}`}
@@ -93,20 +112,18 @@ export default function FacultyRecords() {
               </svg>
             </button>
 
+            {/* Main Stream List */}
             <div 
               className={`absolute z-50 w-full mt-1.5 rounded-xl border shadow-2xl backdrop-blur-2xl overflow-hidden transition-all duration-300 origin-top ${
-                isDropdownOpen 
-                  ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
-                  : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+                isDropdownOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
               } ${isDarkMode ? 'bg-[#1a2130]/95 border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white/95 border-orange-200 shadow-[0_10px_40px_rgba(234,88,12,0.15)]'}`}
             >
-              <div className="max-h-56 overflow-y-auto py-1.5 flex flex-col scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-transparent">
+              <div className={`max-h-56 overflow-y-auto py-1.5 flex flex-col ${customScrollbar}`}>
                 <div
-                  onClick={() => { setSelectedStream('All Streams'); setIsDropdownOpen(false); }}
+                  onClick={() => { setSelectedStream('All Streams'); setIsDropdownOpen(false); setHoveredStream(null); }}
+                  onMouseEnter={() => setHoveredStream(null)}
                   className={`px-4 py-2.5 cursor-pointer font-bold text-xs transition-colors mx-1.5 rounded-lg ${
-                    selectedStream === 'All Streams' 
-                      ? 'bg-orange-500/20 text-orange-500' 
-                      : isDarkMode ? 'text-gray-300 hover:bg-white/10 hover:text-white' : 'text-orange-950 hover:bg-orange-50'
+                    selectedStream === 'All Streams' ? 'bg-orange-500/20 text-orange-500' : isDarkMode ? 'text-gray-300 hover:bg-white/10 hover:text-white' : 'text-orange-950 hover:bg-orange-50'
                   }`}
                 >
                   All Streams
@@ -114,18 +131,55 @@ export default function FacultyRecords() {
                 {STREAMS.map(stream => (
                   <div
                     key={stream}
-                    onClick={() => { setSelectedStream(stream); setIsDropdownOpen(false); }}
-                    className={`px-4 py-2.5 cursor-pointer font-bold text-xs transition-colors mx-1.5 rounded-lg ${
-                      selectedStream === stream 
+                    onMouseEnter={() => setHoveredStream(stream)}
+                    onClick={() => { setSelectedStream(stream); setIsDropdownOpen(false); setHoveredStream(null); }}
+                    className={`flex items-center justify-between px-4 py-2.5 cursor-pointer font-bold text-xs transition-colors mx-1.5 rounded-lg ${
+                      selectedStream === stream || selectedStream.startsWith(`${stream}-`) 
                         ? 'bg-orange-500/20 text-orange-500' 
                         : isDarkMode ? 'text-gray-300 hover:bg-white/10 hover:text-white' : 'text-orange-950 hover:bg-orange-50'
                     }`}
                   >
-                    {stream}
+                    <span className="truncate">{stream}</span>
+                    {STREAM_SECTIONS[stream]?.length > 0 && (
+                      <svg className="w-3.5 h-3.5 opacity-50 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Sub-menu for Sections */}
+            {isDropdownOpen && hoveredStream && STREAM_SECTIONS[hoveredStream]?.length > 0 && (
+              <div 
+                className={`absolute z-50 left-[102%] top-0 w-36 rounded-xl border shadow-2xl backdrop-blur-2xl py-1.5 overflow-hidden animate-fade-in-up ${
+                  isDarkMode ? 'bg-[#1a2130]/95 border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white/95 border-orange-200 shadow-[0_10px_40px_rgba(234,88,12,0.15)]'
+                }`}
+              >
+                <div className={`max-h-56 overflow-y-auto flex flex-col ${customScrollbar}`}>
+                  <div 
+                    onClick={() => { setSelectedStream(hoveredStream); setIsDropdownOpen(false); setHoveredStream(null); }}
+                    className={`px-4 py-2 cursor-pointer font-bold text-[11px] uppercase tracking-wider mx-1.5 rounded-lg mb-1 transition-colors ${
+                      isDarkMode ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-orange-900/60 hover:text-orange-950 hover:bg-orange-50'
+                    }`}
+                  >
+                    All {hoveredStream}
+                  </div>
+                  {STREAM_SECTIONS[hoveredStream].map(section => (
+                    <div
+                      key={section}
+                      onClick={() => { setSelectedStream(`${hoveredStream}-${section}`); setIsDropdownOpen(false); setHoveredStream(null); }}
+                      className={`px-4 py-2.5 cursor-pointer font-bold text-xs transition-colors mx-1.5 rounded-lg ${
+                        selectedStream === `${hoveredStream}-${section}`
+                          ? 'bg-orange-500/20 text-orange-500' 
+                          : isDarkMode ? 'text-gray-300 hover:bg-white/10 hover:text-white' : 'text-orange-950 hover:bg-orange-50'
+                      }`}
+                    >
+                      Section {section}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="relative w-full sm:w-56">

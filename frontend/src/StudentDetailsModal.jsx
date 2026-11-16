@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
-import { STREAMS } from './FacultyRecords';
+import { STREAM_SECTIONS } from './FacultyRecords';
 
 export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const { isDarkMode } = useTheme();
@@ -10,12 +10,13 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const [editForm, setEditForm] = useState({ 
     name: student.name, 
     email: student.email, 
     password: '',
-    stream: student.stream || STREAMS[0] 
+    stream: student.stream || Object.keys(STREAM_SECTIONS)[0] 
   });
   
   const [attendanceData, setAttendanceData] = useState({});
@@ -58,15 +59,12 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     try {
       const token = localStorage.getItem('token');
       
-      // Construct payload for partial updates
       const payload = { 
         name: editForm.name, 
         email: editForm.email, 
         stream: editForm.stream 
       };
       
-      // FIX: If the user types a new password, send it. 
-      // If left blank, we pass the existing password data to satisfy strict backend PUT validations
       if (editForm.password && editForm.password.trim() !== '') {
         payload.password = editForm.password;
       } else if (currentStudent.password) {
@@ -219,6 +217,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const inputClass = `w-full border px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
   const modalBg = isDarkMode ? 'bg-[#1e293b] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
   const labelClass = `text-xs font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
+  const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full ${isDarkMode ? '[&::-webkit-scrollbar-thumb]:bg-gray-700' : '[&::-webkit-scrollbar-thumb]:bg-gray-300'}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4 md:p-8">
@@ -256,12 +255,55 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
                   <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className={inputClass} placeholder="Name" />
                   <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className={inputClass} placeholder="Email" />
-                  <select value={editForm.stream} onChange={e => setEditForm({ ...editForm, stream: e.target.value })} className={inputClass}>
-                    {STREAMS.map(stream => <option key={stream} value={stream}>{stream}</option>)}
+                  <select 
+                    value={editForm.stream} 
+                    onChange={e => setEditForm({ ...editForm, stream: e.target.value })} 
+                    className={`${inputClass} ${customScrollbar}`}
+                  >
+                    {Object.entries(STREAM_SECTIONS).map(([stream, sections]) => {
+                      if (!sections || sections.length === 0) {
+                        return <option key={stream} value={stream}>{stream}</option>;
+                      }
+                      return (
+                        <optgroup key={stream} label={stream} className={isDarkMode ? 'bg-[#0f172a] text-gray-400' : 'bg-white text-gray-500'}>
+                          <option value={stream} className={isDarkMode ? 'text-gray-100' : 'text-gray-900'}>{stream} (Unassigned)</option>
+                          {sections.map(sec => (
+                            <option key={`${stream}-${sec}`} value={`${stream}-${sec}`} className={isDarkMode ? 'text-gray-100' : 'text-gray-900'}>
+                              {stream} - Section {sec}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
                   </select>
                   
-                  {/* Password remains optional to the user visually, but we handle the backend requirement under the hood */}
-                  <input type="text" placeholder="New Password (Optional)" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={inputClass} />
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      placeholder="New Password (Optional)" 
+                      value={editForm.password} 
+                      onChange={e => setEditForm({ ...editForm, password: e.target.value })} 
+                      className={`${inputClass} pr-10`} 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute inset-y-0 right-0 pr-2.5 flex items-center transition-colors ${
+                        isDarkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      {showPassword ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                   
                   <button type="submit" className="bg-orange-600 text-white font-medium text-sm py-2 mt-2 rounded-lg hover:bg-orange-500 transition-colors">Save Changes</button>
                 </form>

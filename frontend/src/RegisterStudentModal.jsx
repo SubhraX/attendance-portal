@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
-import { STREAMS } from './FacultyRecords';
+import { STREAM_SECTIONS } from './FacultyRecords';
 
 export default function RegisterStudentModal({ onClose, onSuccess }) {
   const { isDarkMode } = useTheme();
   const { showToast } = useToast();
   
-  const [regForm, setRegForm] = useState({ name: '', email: '', password: '', stream: STREAMS[0] });
+  const [regForm, setRegForm] = useState({ name: '', email: '', password: '', stream: Object.keys(STREAM_SECTIONS)[0] });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegisterStudent = async (e) => {
@@ -41,6 +41,8 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
   const labelClass = `block text-xs font-semibold uppercase tracking-wider mb-1.5 ${
     isDarkMode ? 'text-gray-400' : 'text-gray-500'
   }`;
+
+  const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full ${isDarkMode ? '[&::-webkit-scrollbar-thumb]:bg-gray-700' : '[&::-webkit-scrollbar-thumb]:bg-gray-300'}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
@@ -92,15 +94,27 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
           </div>
           
           <div>
-            <label className={labelClass}>Stream</label>
+            <label className={labelClass}>Stream & Section</label>
             <select 
               value={regForm.stream} 
               onChange={e => setRegForm({ ...regForm, stream: e.target.value })} 
-              className={inputClass}
+              className={`${inputClass} ${customScrollbar}`}
             >
-              {STREAMS.map(stream => (
-                <option key={stream} value={stream}>{stream}</option>
-              ))}
+              {Object.entries(STREAM_SECTIONS).map(([stream, sections]) => {
+                if (!sections || sections.length === 0) {
+                  return <option key={stream} value={stream}>{stream}</option>;
+                }
+                return (
+                  <optgroup key={stream} label={stream} className={isDarkMode ? 'bg-[#0f172a] text-gray-400' : 'bg-white text-gray-500'}>
+                    <option value={stream} className={isDarkMode ? 'text-gray-100' : 'text-gray-900'}>{stream} (Unassigned)</option>
+                    {sections.map(sec => (
+                      <option key={`${stream}-${sec}`} value={`${stream}-${sec}`} className={isDarkMode ? 'text-gray-100' : 'text-gray-900'}>
+                        {stream} - Section {sec}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
 
