@@ -157,17 +157,16 @@ export default function Login() {
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-700 mb-1.5 ml-1">Credentials</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-orange-700">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-orange-500">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                         <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h4" />
                       </svg>
                     </div>
-                    {/* Notice bg-white/95 instead of bg-white/60 */}
                     <input 
                       type="text" 
                       placeholder="Enrollment Number / Email" 
-                      className="w-full bg-white/95 border border-white text-gray-900 rounded-lg pl-11 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-medium placeholder-gray-400 shadow-sm" 
+                      className="w-full bg-white/95 border border-white text-gray-900 rounded-lg pl-11 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-medium placeholder-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]" 
                       onChange={e => setEmail(e.target.value)} 
                       required 
                     />
@@ -176,24 +175,23 @@ export default function Login() {
                 
                 {/* Password Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-orange-700">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-orange-500">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
                     </svg>
                   </div>
-                  {/* Notice bg-white/95 instead of bg-white/60 */}
                   <input 
                     type={showPassword ? "text" : "password"}
                     placeholder="Password" 
-                    className="w-full bg-white/95 border border-white text-gray-900 rounded-lg pl-11 pr-11 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-medium placeholder-gray-400 shadow-sm" 
+                    className="w-full bg-white/95 border border-white text-gray-900 rounded-lg pl-11 pr-11 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm font-medium placeholder-gray-400 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]" 
                     onChange={e => setPassword(e.target.value)} 
                     required 
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-500 hover:text-gray-800 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-orange-500 transition-colors"
                   >
                     {showPassword ? (
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
