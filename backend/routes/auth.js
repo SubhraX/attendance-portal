@@ -9,12 +9,12 @@ const router = express.Router();
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, stream } = req.body;
+    const { name, email, password, role, stream, section } = req.body;
     
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role, stream });
+    const user = await User.create({ name, email, password, role, stream, section });
     res.status(201).json({ message: 'User registered successfully', userId: user._id });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -104,7 +104,7 @@ router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
 // Edit a Student (Faculty Only)
 router.put('/student/:id', protect, instructorOnly, async (req, res) => {
   try {
-    const { name, email, password, stream } = req.body;
+    const { name, email, password, stream, section } = req.body;
     const student = await User.findById(req.params.id);
     
     if (!student) return res.status(404).json({ message: 'Student not found' });
@@ -112,8 +112,8 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
     if (name) student.name = name;
     if (email) student.email = email;
     if (stream) student.stream = stream;
+    if (section) student.section = section;
     
-    // FIX: Guarantee that only genuine new strings overwrite the password
     if (password && password.trim().length > 0) {
       student.password = password.trim(); 
     }
@@ -121,7 +121,6 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
     await student.save();
     res.status(200).json({ message: 'Student updated successfully' });
   } catch (error) {
-    // FIX: Gracefully catch MongoDB duplicate key errors if you accidentally assign an existing email
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Email already exists in the system.' });
     }
