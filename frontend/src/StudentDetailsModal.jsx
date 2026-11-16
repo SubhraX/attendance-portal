@@ -289,24 +289,30 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   {currentStudent.name}
                 </h4>
 
-                {/* Dynamic Badges: Present and Absent Counters */}
+                {/* Gain & Lose Counters */}
                 {(totalSessions > 0 || prevTotal > 0) && (
-                  <div className="mt-2 inline-flex items-center gap-2">
-                    {/* Up Counter (Present) */}
-                    <span className="flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
+                  <div className="mt-3 flex items-center gap-2">
+
+                    {/* Gain Badge (Up) */}
+                    <span className={`flex items-center gap-1.5 text-sm font-black px-3 py-1 rounded-full ${isDarkMode ? 'bg-[#112a2c] text-[#00d789]' : 'bg-emerald-100 text-emerald-700'
+                      }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7"></path>
+                        {/* Thicker, flatter chevron up */}
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M4.5 15.75l7.5-7.5 7.5 7.5"></path>
                       </svg>
                       {presentCount}
                     </span>
 
-                    {/* Down Counter (Absent) */}
-                    <span className="flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-500">
+                    {/* Lose Badge (Down) */}
+                    <span className={`flex items-center gap-1.5 text-sm font-black px-3 py-1 rounded-full ${isDarkMode ? 'bg-[#311f26] text-[#ff4b4b]' : 'bg-red-100 text-red-700'
+                      }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M19 9l-7 7-7-7"></path>
+                        {/* Thicker, flatter chevron down */}
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
                       </svg>
                       {absentCount}
                     </span>
+
                   </div>
                 )}
 
