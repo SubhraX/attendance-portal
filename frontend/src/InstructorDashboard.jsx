@@ -1,21 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCode from 'react-qr-code';
-import FacultyRecords from './FacultyRecords'; 
+import FacultyRecords from './FacultyRecords';
 import { useTheme } from './ThemeContext';
 
 export default function InstructorDashboard() {
   const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  
-  const [activeTab, setActiveTab] = useState('generate'); 
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); 
-  
+
+  const [activeTab, setActiveTab] = useState('generate');
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+
   const [token, setToken] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [qrDuration, setQrDuration] = useState(120);
   const [isNetworkLocked, setIsNetworkLocked] = useState(false);
-  const [classId, setClassId] = useState('CS101'); 
+  const [classId, setClassId] = useState('CS101');
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [attendedStudents, setAttendedStudents] = useState([]);
 
@@ -34,18 +34,18 @@ export default function InstructorDashboard() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
         body: JSON.stringify({ classId: classId.trim(), qrDuration })
       });
-      
+
       if (res.ok) {
         const data = await res.json();
-        setToken(data.token); 
+        setToken(data.token);
         setTimeLeft(qrDuration);
         setIsSessionActive(true);
-        setAttendedStudents([]); 
-        
+        setAttendedStudents([]);
+
         if (socketRef.current) socketRef.current.close();
         const socket = new WebSocket('wss://attendance-portal-p2lp.onrender.com');
         socketRef.current = socket;
-        
+
         socket.onopen = () => socket.send(JSON.stringify({ action: 'startRotation', classId: classId.trim(), duration: qrDuration }));
         socket.onmessage = (event) => {
           const msg = JSON.parse(event.data);
@@ -70,7 +70,7 @@ export default function InstructorDashboard() {
       if (res.ok) {
         const data = await res.json();
         setToken(data.token);
-        setTimeLeft(qrDuration); 
+        setTimeLeft(qrDuration);
       }
     } catch (error) {
       console.error("Token rotation error:", error);
@@ -124,7 +124,7 @@ export default function InstructorDashboard() {
     } else if (timeLeft === 0) {
       rotateQRToken();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isSessionActive]);
 
   const handleLogout = async () => {
@@ -154,21 +154,21 @@ export default function InstructorDashboard() {
   const inputClass = isDarkMode ? "bg-[#0b101a] border-gray-800 text-gray-200" : "bg-gray-50 border-gray-300 text-gray-900";
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col md:flex-row font-sans selection:bg-orange-600 selection:text-white bg-cover bg-center bg-no-repeat bg-fixed relative text-gray-200"
       style={{ backgroundImage: bgImage }}
     >
       <div className={`absolute inset-0 z-0 ${overlayClass}`}></div>
-      
+
       <div className={`md:border-r border-b flex flex-row md:flex-col p-4 md:p-6 z-20 relative shrink-0 w-full md:w-auto ${isSidebarExpanded ? 'md:w-64' : 'md:w-24 md:items-center'} justify-between md:justify-start ${isDarkMode ? 'bg-[#10141d] border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
-        <div 
+        <div
           onClick={() => { if (window.innerWidth >= 768) setIsSidebarExpanded(!isSidebarExpanded) }}
           className={`flex items-center md:mb-10 md:pb-6 md:border-b cursor-pointer shrink-0 ${isSidebarExpanded ? 'gap-3' : 'gap-3 md:justify-center w-full'} ${isDarkMode ? 'border-gray-800' : 'border-gray-300'}`}
           title="Toggle Sidebar"
         >
-          <img 
-            src="/BITS_logo.png" 
-            alt="BIT Mesra" 
+          <img
+            src="/BITS_logo.png"
+            alt="BIT Mesra"
             className="w-10 h-10 md:w-12 md:h-12 object-contain bg-white/10 rounded-full p-1 shrink-0"
           />
           <div className={`flex-col ${!isSidebarExpanded ? 'flex md:hidden' : 'flex'}`}>
@@ -184,7 +184,7 @@ export default function InstructorDashboard() {
         <div className="flex md:hidden items-center gap-2">
           <button onClick={toggleTheme} className={`p-2.5 rounded-md border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`}>
             {isDarkMode ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
+              : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
           </button>
           <button onClick={handleLogout} className={`p-2.5 rounded-md border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-red-500' : 'bg-white border-gray-300 text-red-600'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -196,7 +196,7 @@ export default function InstructorDashboard() {
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
             {isSidebarExpanded && <span className="whitespace-nowrap">Generate QR</span>}
           </button>
-          
+
           <button onClick={() => setActiveTab('records')} className={`py-3 rounded-md font-bold text-sm flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${activeTab === 'records' ? 'bg-orange-600 border-orange-600 text-white' : isDarkMode ? 'bg-transparent border-transparent text-gray-400 hover:bg-gray-800 hover:text-gray-200' : 'bg-transparent border-transparent text-gray-600 hover:bg-gray-200'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             {isSidebarExpanded && <span className="whitespace-nowrap">Student Records</span>}
@@ -206,17 +206,17 @@ export default function InstructorDashboard() {
         <div className={`hidden md:flex mt-auto pt-6 border-t flex-col gap-2 w-full ${!isSidebarExpanded && 'items-center'} ${isDarkMode ? 'border-gray-800' : 'border-gray-300'}`}>
           <button onClick={toggleTheme} className={`py-3 rounded-md font-bold text-sm flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${isDarkMode ? 'bg-transparent border-transparent text-gray-400 hover:bg-gray-800 hover:text-gray-200' : 'bg-transparent border-transparent text-gray-600 hover:bg-gray-200'}`}>
             {isDarkMode ? <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            : <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
+              : <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
             {isSidebarExpanded && <span className="whitespace-nowrap">Theme</span>}
           </button>
-          
+
           <button onClick={handleLogout} className={`py-3 rounded-md font-bold text-sm flex items-center border ${isSidebarExpanded ? 'px-4 gap-3 w-full' : 'w-12 justify-center'} ${isDarkMode ? 'bg-transparent border-transparent text-red-500 hover:bg-gray-800' : 'bg-transparent border-transparent text-red-600 hover:bg-gray-200'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             {isSidebarExpanded && <span className="whitespace-nowrap">Log Out</span>}
           </button>
 
           {isSidebarExpanded && (
-            <div className={`mt-2 text-[10px] text-center font-mono ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+            <div className={`mt-4 text-xs text-center font-bold uppercase tracking-widest ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               &copy; {new Date().getFullYear()} BIT Mesra
             </div>
           )}
@@ -236,41 +236,41 @@ export default function InstructorDashboard() {
 
       <div className="flex-1 p-4 pb-28 md:p-10 flex flex-col overflow-y-auto z-10 relative">
         <div className="w-full max-w-[1400px] mx-auto flex flex-col h-full mt-2 md:mt-4">
-          
+
           {activeTab === 'generate' ? (
             <div className={`w-full mx-auto flex flex-col lg:flex-row gap-8 mt-6 md:mt-0 ${isSessionActive ? 'items-stretch' : 'items-center justify-center h-full'}`}>
-              
+
               <div className={`flex-1 flex flex-col ${!isSessionActive ? 'max-w-md w-full' : 'items-center justify-center'}`}>
                 {!isSessionActive ? (
                   <div className={`flex flex-col p-6 md:p-8 rounded-xl border w-full gap-5 md:gap-6 ${panelClass}`}>
                     <h2 className={`text-lg md:text-xl font-bold uppercase tracking-wide border-b pb-3 md:pb-4 ${isDarkMode ? 'text-gray-100 border-gray-800' : 'text-gray-900 border-gray-200'}`}>Session Config</h2>
-                    
+
                     <div className="flex flex-col gap-1.5 md:gap-2">
                       <label className={`text-[10px] md:text-xs font-mono uppercase ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Course Code</label>
-                      <input 
-                        type="text" 
-                        value={classId} 
-                        onChange={(e) => setClassId(e.target.value.toUpperCase())} 
-                        className={`rounded-md font-mono focus:outline-none focus:border-orange-500 px-3 py-2 border text-sm md:text-base ${inputClass}`} 
+                      <input
+                        type="text"
+                        value={classId}
+                        onChange={(e) => setClassId(e.target.value.toUpperCase())}
+                        className={`rounded-md font-mono focus:outline-none focus:border-orange-500 px-3 py-2 border text-sm md:text-base ${inputClass}`}
                         placeholder="CS101"
                       />
                     </div>
-                    
+
                     <div className="flex flex-col gap-1.5 md:gap-2">
                       <label className={`text-[10px] md:text-xs font-mono uppercase ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Token Rotation Interval (s)</label>
-                      <input 
-                        type="number" 
-                        min="5" 
-                        max="300" 
-                        value={qrDuration} 
-                        onChange={(e) => setQrDuration(Number(e.target.value))} 
-                        className={`rounded-md font-mono focus:outline-none focus:border-orange-500 px-3 py-2 border text-sm md:text-base ${inputClass}`} 
+                      <input
+                        type="number"
+                        min="5"
+                        max="300"
+                        value={qrDuration}
+                        onChange={(e) => setQrDuration(Number(e.target.value))}
+                        className={`rounded-md font-mono focus:outline-none focus:border-orange-500 px-3 py-2 border text-sm md:text-base ${inputClass}`}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5 md:gap-2">
                       <label className={`text-[10px] md:text-xs font-mono uppercase ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Network Restrict</label>
-                      <div 
+                      <div
                         onClick={toggleNetworkLock}
                         className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer border ${inputClass}`}
                       >
@@ -285,8 +285,8 @@ export default function InstructorDashboard() {
                       </div>
                     </div>
 
-                    <button 
-                      onClick={startSession} 
+                    <button
+                      onClick={startSession}
                       className="mt-2 md:mt-4 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 md:py-4 rounded-md font-bold w-full text-sm md:text-base"
                     >
                       Initialize Session
@@ -298,15 +298,15 @@ export default function InstructorDashboard() {
                       <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-emerald-500"></span>
                       <span className={`font-mono font-bold text-xs md:text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>ACTIVE: {classId}</span>
                     </div>
-                    
+
                     {token ? (
                       <>
                         <div className="flex justify-center p-4 md:p-8 bg-white rounded-lg border border-gray-200 w-full max-w-[280px] md:max-w-[400px]">
-                           <QRCode 
-                             value={JSON.stringify({ classId, token })} 
-                             size={320} 
-                             style={{ height: "auto", maxWidth: "100%", width: "100%" }} 
-                           />
+                          <QRCode
+                            value={JSON.stringify({ classId, token })}
+                            size={320}
+                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                          />
                         </div>
                         <p className={`font-mono font-extrabold mt-6 md:mt-10 text-4xl md:text-6xl ${isDarkMode ? 'text-orange-500' : 'text-orange-600'}`}>
                           {formatTime(timeLeft)}
@@ -318,8 +318,8 @@ export default function InstructorDashboard() {
                       </div>
                     )}
 
-                    <button 
-                      onClick={stopSession} 
+                    <button
+                      onClick={stopSession}
                       className={`mt-8 md:mt-12 px-6 md:px-8 py-2.5 md:py-3 rounded-md font-bold w-full max-w-xs border text-sm md:text-base ${isDarkMode ? 'bg-transparent border-red-500/50 text-red-500 hover:bg-red-900/20' : 'bg-transparent border-red-200 text-red-600 hover:bg-red-50'}`}
                     >
                       Terminate Session
@@ -334,7 +334,7 @@ export default function InstructorDashboard() {
                     <h3 className={`font-bold text-sm md:text-base ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Verified Scans</h3>
                     <span className="bg-orange-600 text-white font-mono text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-sm">{attendedStudents.length}</span>
                   </div>
-                  
+
                   <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 max-h-[300px] lg:max-h-full">
                     {attendedStudents.length === 0 ? (
                       <div className={`h-full flex flex-col items-center justify-center space-y-2 md:space-y-3 p-4 md:p-6 text-center ${isDarkMode ? 'text-gray-600' : 'text-gray-400 font-medium'}`}>
