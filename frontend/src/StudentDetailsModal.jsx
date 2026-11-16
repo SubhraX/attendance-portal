@@ -14,7 +14,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   
   // Graph States
   const [animateGraph, setAnimateGraph] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(12); // Number of weeks to display
+  const [graphMode, setGraphMode] = useState('daily'); // 'daily' or 'weekly'
   const [hoveredNode, setHoveredNode] = useState(null);
   
   const [editForm, setEditForm] = useState({ 
@@ -64,7 +64,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     setAnimateGraph(false);
     const timer = setTimeout(() => setAnimateGraph(true), 50);
     return () => clearTimeout(timer);
-  }, [calMonth, calYear, currentStudent._id, zoomLevel]);
+  }, [calMonth, calYear, currentStudent._id, graphMode]);
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -186,53 +186,74 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   };
 
+  // Zooming Handler
   const handleGraphWheel = (e) => {
     if (e.deltaY < 0) {
-      setZoomLevel(prev => Math.max(4, prev - 1)); // Scroll up = zoom in (fewer weeks)
+      setGraphMode('daily'); // Scroll up / Pinch out = Zoom in to Days
     } else if (e.deltaY > 0) {
-      setZoomLevel(prev => Math.min(24, prev + 1)); // Scroll down = zoom out (more weeks)
+      setGraphMode('weekly'); // Scroll down / Pinch in = Zoom out to Weeks
     }
   };
 
-  // Switch back to Weekly Trend for better scaling
-  const getWeeklyTrend = () => {
+  // --- Graph Data Calculations ---
+  const getGraphData = () => {
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const data = [];
-    const endDate = new Date(calYear, calMonth + 1, 0); 
-    let lastPct = 0; 
-    
-    for (let i = zoomLevel - 1; i >= 0; i--) {
-      const weekEnd = new Date(endDate);
-      weekEnd.setDate(weekEnd.getDate() - (i * 7));
-      const weekStart = new Date(weekEnd);
-      weekStart.setDate(weekStart.getDate() - 6);
+    let cumulativeP = 0;
+    let cumulativeT = 0;
+    let lastPct = 0;
 
-      const label = `${weekStart.getDate()} ${monthNames[weekStart.getMonth()].substring(0,3)}`;
-      
-      let p = 0, t = 0;
-      Object.entries(attendanceData).forEach(([dateStr, status]) => {
-        const d = new Date(dateStr);
-        d.setHours(0,0,0,0);
-        const ws = new Date(weekStart); ws.setHours(0,0,0,0);
-        const we = new Date(weekEnd); we.setHours(23,59,59,999);
+    if (graphMode === 'daily') {
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const status = attendanceData[dateStr] || 'none';
         
-        if (d >= ws && d <= we && (status === 'present' || status === 'absent')) {
-          t++;
-          if (status === 'present') p++;
-        }
-      });
-      
-      let pct = lastPct;
-      let status = 'none';
-      if (t > 0) {
-        pct = Math.round((p / t) * 100);
-        status = pct >= 50 ? 'present' : 'absent'; // Base color off week's success rate
+        if (status === 'present') { cumulativeP++; cumulativeT++; }
+        else if (status === 'absent') { cumulativeT++; }
+        
+        const pct = cumulativeT > 0 ? Math.round((cumulativeP / cumulativeT) * 100) : lastPct;
+        lastPct = pct;
+        
+        data.push({ label: String(day), status, pct });
       }
-      lastPct = pct;
+    } else {
+      // Weekly grouping for current month
+      const weeks = [
+        { label: 'Week 1', start: 1, end: 7 },
+        { label: 'Week 2', start: 8, end: 14 },
+        { label: 'Week 3', start: 15, end: 21 },
+        { label: 'Week 4', start: 22, end: daysInMonth }
+      ];
       
-      data.push({ label, status, pct, present: p, total: t });
+      weeks.forEach(w => {
+        let weekP = 0, weekT = 0;
+        for (let d = w.start; d <= w.end; d++) {
+          const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const status = attendanceData[dateStr] || 'none';
+          if (status === 'present') { cumulativeP++; cumulativeT++; weekP++; weekT++; }
+          else if (status === 'absent') { cumulativeT++; weekT++; }
+        }
+        
+        const pct = cumulativeT > 0 ? Math.round((cumulativeP / cumulativeT) * 100) : lastPct;
+        lastPct = pct;
+        const weekStatus = weekT === 0 ? 'none' : (weekP / weekT >= 0.5 ? 'present' : 'absent');
+        
+        data.push({ label: w.label, status: weekStatus, pct });
+      });
+    }
+
+    // Normalize array length to ensure flawless CSS morphing within the same view mode
+    const targetLength = graphMode === 'daily' ? 31 : 4;
+    const normalizedData = [];
+    for (let i = 0; i < targetLength; i++) {
+      if (i < data.length) {
+        normalizedData.push(data[i]);
+      } else {
+        normalizedData.push({ ...data[data.length - 1], isHidden: true }); // Padding for shorter months
+      }
     }
     
-    return data;
+    return normalizedData;
   };
 
   const renderCalendar = () => {
@@ -260,17 +281,19 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-700/50 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600/80`;
 
   // Stats
-  const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
-  const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
+  const presentCount = Object.keys(attendanceData).filter(key => {
+    const d = new Date(key); return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
+  }).length;
+  const absentCount = Object.keys(attendanceData).filter(key => {
+    const d = new Date(key); return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'absent';
+  }).length;
   const totalSessions = presentCount + absentCount;
   const attendanceRate = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
 
-  // SVG Chart Dimensions
-  const trendData = getWeeklyTrend();
-  
-  // Dynamic scaling based on zoomLevel to ensure points are spread like a ruler
-  const baseWidth = 800;
-  const svgWidth = Math.max(baseWidth, trendData.length * 60); 
+  // SVG Chart Setup
+  const isDaily = graphMode === 'daily';
+  const trendData = getGraphData();
+  const svgWidth = isDaily ? 800 : 600; 
   const svgHeight = 170; 
   const paddingX = 30;
   const paddingY = 40; 
@@ -366,6 +389,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               </div>
             </div>
 
+            {/* RESTORED: Admin Controls */}
             <div className={`border rounded-xl p-5 mt-auto shadow-sm ${cardBg}`}>
               <span className={labelClass}>Admin Controls</span>
               <div className="flex flex-col gap-3 mt-4">
@@ -421,7 +445,9 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M4 18v-4h4v4H4zm6 0v-8h4v8h-4zm6 0V6h4v12h-4z"/>
                     </svg>
-                    <h4 className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Weekly Trend</h4>
+                    <h4 className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                      {isDaily ? 'Daily Trend' : 'Weekly Trend'}
+                    </h4>
                   </div>
                   <span className={`text-[9px] uppercase font-bold tracking-widest ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ml-6 flex items-center gap-1.5`}>
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
@@ -439,13 +465,12 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
               {/* Scrollable Graph Container */}
               <div 
-                className={`w-full overflow-x-auto overflow-y-hidden rounded-lg ${customScrollbar}`}
+                className={`w-full overflow-y-hidden rounded-lg ${customScrollbar} ${isDaily ? 'overflow-x-auto' : 'overflow-x-hidden'}`}
                 onWheel={handleGraphWheel}
               >
                 <svg 
                   viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
-                  className="h-auto min-w-full"
-                  style={{ transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+                  className={`h-auto transition-all duration-500 ${isDaily ? 'min-w-[800px]' : 'w-full'}`}
                 >
                   <defs>
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -467,7 +492,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     </text>
                   ))}
                   
-                  {/* SMOOTH MORPHING */}
+                  {/* SMOOTH MORPHING: CSS transition 'd' seamlessly animates when attendance changes */}
                   {pointCoords.length > 0 && (
                     <>
                       <path 
@@ -494,7 +519,9 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   
                   {/* Data Points */}
                   {pointCoords.map((pt, i) => {
-                    // Logic for Green/Red Nodes based on > 50% weekly success rate
+                    if (pt.isHidden) return null;
+                    
+                    // Logic for Green/Red Nodes
                     const isPresent = pt.status === 'present';
                     const isAbsent = pt.status === 'absent';
                     const isUnmarked = pt.status === 'none';
@@ -512,12 +539,12 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                           transitionDelay: `${0.1 + (i * 0.02)}s` 
                         }}
                       >
-                        {/* Day Label on X Axis */}
+                        {/* Day/Week Label on X Axis */}
                         <text x={pt.x} y={svgHeight - 12} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="9" textAnchor="middle" fontWeight="bold" className="select-none" style={{ transition: 'all 0.5s ease' }}>
                           {pt.label}
                         </text>
 
-                        {/* Visible Node Circle - Glides smoothly */}
+                        {/* Visible Node Circle - Glides smoothly via cx/cy transition */}
                         <circle 
                           cx={pt.x} cy={pt.y} 
                           r={radius} 
@@ -540,7 +567,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                           </text>
                         </g>
 
-                        {/* Invisible Hit Area */}
+                        {/* Invisible Hit Area (makes hovering over points much easier) */}
                         <circle 
                           cx={pt.x} cy={pt.y} 
                           r="18" 
