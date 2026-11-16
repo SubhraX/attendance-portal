@@ -11,9 +11,10 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
     return () => clearTimeout(timer);
   }, [calMonth, calYear, attendanceData]);
 
-  // Extract daily trend perfectly normalized for the viewed calendar month
+  // Calculate actual days in the currently viewed month (handles leap years perfectly)
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
   const getDailyTrend = () => {
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const data = [];
     let cumulativeP = 0;
     let cumulativeT = 0;
@@ -33,7 +34,7 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
     }
 
     // Normalize to exactly 31 items. This guarantees the SVG 'd' paths always have the exact same 
-    // number of anchors so they morph flawlessly between months.
+    // number of anchors so they morph flawlessly between months of different lengths.
     const normalizedData = [];
     for (let i = 0; i < 31; i++) {
       if (i < data.length) {
@@ -48,16 +49,19 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
 
   const trendData = getDailyTrend();
   
-  // SVG Chart Setup (Fixed size, responsive scale down)
+  // SVG Chart Setup (Adjusted padding for larger fonts)
   const svgWidth = 800; 
-  const svgHeight = 170; 
-  const paddingX = 25;
-  const paddingY = 40; 
+  const svgHeight = 180; 
+  const paddingX = 35; // Increased for larger Y-axis labels
+  const paddingY = 45; // Increased to give tooltips more breathing room
   const chartW = svgWidth - paddingX * 2;
   const chartH = svgHeight - paddingY - 30; 
   
   const pointCoords = trendData.map((d, i) => {
-    const x = paddingX + (i * (chartW / (trendData.length - 1 || 1)));
+    // DYNAMIC SPREAD: We stack any padded (hidden) points exactly on the last valid day's X coordinate.
+    // This perfectly spaces out the visible points based on the true month length (28, 29, 30, or 31).
+    const effectiveIndex = Math.min(i, daysInMonth - 1);
+    const x = paddingX + (effectiveIndex * (chartW / (daysInMonth - 1)));
     const y = paddingY + chartH - (d.pct / 100 * chartH);
     return { x, y, ...d };
   });
@@ -82,7 +86,6 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
         </div>
       </div>
 
-      {/* Scalable Container for fitting days perfectly */}
       <div className="w-full overflow-hidden rounded-lg">
         <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto">
           <defs>
@@ -98,9 +101,9 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
             return <line key={line} x1={paddingX} y1={yPos} x2={svgWidth - paddingX} y2={yPos} stroke={isDarkMode ? "#334155" : "#e2e8f0"} strokeWidth="0.5" />;
           })}
 
-          {/* Y Axis Labels */}
+          {/* Y Axis Labels (Bigger Font) */}
           {[0, 50, 100].map(line => (
-            <text key={line} x={paddingX - 10} y={paddingY + chartH - (line/100 * chartH) + 4} fill={isDarkMode ? "#64748b" : "#94a3b8"} fontSize="10" textAnchor="end" className="select-none">
+            <text key={line} x={paddingX - 12} y={paddingY + chartH - (line/100 * chartH) + 4} fill={isDarkMode ? "#64748b" : "#94a3b8"} fontSize="12" textAnchor="end" className="select-none font-medium">
               {line}%
             </text>
           ))}
@@ -132,7 +135,7 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
           
           {/* Data Points */}
           {pointCoords.map((pt, i) => {
-            if (pt.isHidden) return null;
+            if (pt.isHidden) return null; // Skips rendering UI elements for the invisible padded dates
             
             const isPresent = pt.status === 'present';
             const isAbsent = pt.status === 'absent';
@@ -140,7 +143,7 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
             
             const fillColor = isPresent ? '#10b981' : isAbsent ? '#ef4444' : (isDarkMode ? '#334155' : '#cbd5e1');
             const strokeColor = isPresent ? '#047857' : isAbsent ? '#b91c1c' : 'transparent';
-            const radius = isUnmarked ? "2.5" : (hoveredNode === i ? "6" : "4.5");
+            const radius = isUnmarked ? "3" : (hoveredNode === i ? "7" : "5");
 
             return (
               <g 
@@ -151,30 +154,30 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
                   transitionDelay: `${0.1 + (i * 0.02)}s` 
                 }}
               >
-                {/* Day Label on X Axis */}
-                <text x={pt.x} y={svgHeight - 12} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="10" textAnchor="middle" fontWeight="bold" className="select-none" style={{ transition: 'all 0.5s ease' }}>
+                {/* Day Label on X Axis (Bigger Font) */}
+                <text x={pt.x} y={svgHeight - 10} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="12" textAnchor="middle" fontWeight="bold" className="select-none" style={{ transition: 'all 0.5s ease' }}>
                   {pt.label}
                 </text>
 
-                {/* Visible Node Circle - Glides smoothly */}
+                {/* Visible Node Circle */}
                 <circle 
                   cx={pt.x} cy={pt.y} 
                   r={radius} 
                   fill={fillColor} 
                   stroke={strokeColor} 
-                  strokeWidth="1.5" 
+                  strokeWidth="2" 
                   style={{ transition: 'cx 0.5s cubic-bezier(0.4, 0, 0.2, 1), cy 0.5s cubic-bezier(0.4, 0, 0.2, 1), r 0.3s ease', pointerEvents: 'none' }} 
                 />
 
-                {/* Hover Tooltip Group */}
+                {/* Hover Tooltip Group (Bigger Text & Box) */}
                 <g style={{ 
-                  transform: `translate(${pt.x}px, ${pt.y - 20}px)`, 
+                  transform: `translate(${pt.x}px, ${pt.y - 24}px)`, 
                   transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-out',
                   opacity: hoveredNode === i ? 1 : 0,
                   pointerEvents: 'none'
                 }}>
-                  <rect x="-24" y="-14" width="48" height="18" rx="4" fill={isDarkMode ? "#334155" : "#475569"} className="drop-shadow-sm" />
-                  <text x="0" y="-2" fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
+                  <rect x="-28" y="-16" width="56" height="20" rx="4" fill={isDarkMode ? "#334155" : "#475569"} className="drop-shadow-sm" />
+                  <text x="0" y="-2" fill="#ffffff" fontSize="11" fontWeight="bold" textAnchor="middle">
                     {pt.pct}%
                   </text>
                 </g>
@@ -182,7 +185,7 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
                 {/* Invisible Hit Area */}
                 <circle 
                   cx={pt.x} cy={pt.y} 
-                  r="15" 
+                  r="16" 
                   fill="transparent"
                   className="cursor-crosshair"
                   onMouseEnter={() => setHoveredNode(i)}
