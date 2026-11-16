@@ -12,6 +12,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [profileImage, setProfileImage] = useState(student.profileImage || null);
   
   const [editForm, setEditForm] = useState({ 
     name: student.name, 
@@ -82,6 +83,16 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     } catch (error) {
       console.error("Error updating student:", error);
       showToast("Network error. Could not update profile.");
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setProfileImage(imageUrl);
+      // Add fetch call here to upload via FormData to your backend
+      showToast("Profile image updated."); 
     }
   };
 
@@ -181,12 +192,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const days = [];
     
-    // Pad start of month
     for (let i = 0; i < firstDay; i++) {
         days.push(<div key={`empty-${i}`} className="h-10 rounded-md bg-transparent"></div>);
     }
     
-    // Render actual days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
@@ -196,7 +205,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       days.push(<div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-bold rounded-md cursor-pointer transition-colors ${styleClass}`}>{day}</div>);
     }
 
-    // Pad end of month to force exactly 42 cells (6 rows)
     const totalCells = firstDay + daysInMonth;
     const remainingCells = 42 - totalCells;
     for (let i = 0; i < remainingCells; i++) {
@@ -214,7 +222,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const labelClass = `text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
   const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-700/50 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600/80`;
 
-  // Stats for Currently Viewed Month
   const presentCount = Object.keys(attendanceData).filter(key => {
     const d = new Date(key); return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
   }).length;
@@ -228,28 +235,46 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 md:p-8">
       <div className={`w-full max-w-[1000px] max-h-[90vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border ${modalBg}`}>
         
-        {/* Header */}
         <div className={`flex justify-between items-center px-6 py-4 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
-              {getInitials(currentStudent.name)}
-            </div>
-            <h3 className="text-base font-bold uppercase tracking-widest">Student Record</h3>
-          </div>
+          <h3 className="text-base font-bold uppercase tracking-widest">Student Record</h3>
           <button onClick={onClose} className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
-        {/* Body */}
         <div className={`flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-[#121826]' : 'bg-white'} ${customScrollbar}`}>
           
-          {/* Left Column (Info & Actions) */}
           <div className="w-full md:w-1/3 flex flex-col gap-6">
             
+            <div className={`border rounded-xl p-6 flex flex-col items-center text-center shadow-sm ${cardBg}`}>
+              <div className="relative group mb-4">
+                <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(currentStudent.name)
+                  )}
+                </div>
+                <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              </div>
+              <h4 className={`font-bold uppercase tracking-wide text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {currentStudent.name}
+              </h4>
+              <span className={`text-xs mt-1 font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {currentStudent.stream} - {currentStudent.section}
+              </span>
+            </div>
+
             <div className={`border rounded-xl p-5 shadow-sm ${cardBg}`}>
               <div className="flex justify-between items-center mb-4">
-                <span className={labelClass}>Profile Details</span>
+                <span className={labelClass}>Account Details</span>
                 <button onClick={() => setIsEditing(!isEditing)} className={`text-xs font-bold transition-colors ${isDarkMode ? 'text-orange-500 hover:text-orange-400' : 'text-orange-600 hover:text-orange-700'}`}>
                   {isEditing ? 'Cancel' : 'Edit'}
                 </button>
@@ -278,16 +303,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               ) : (
                 <div className="flex flex-col gap-4">
                   <div>
-                    <span className={labelClass}>Name</span>
-                    <span className={`text-sm font-bold uppercase tracking-wide ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.name}</span>
-                  </div>
-                  <div>
                     <span className={labelClass}>Email</span>
                     <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.email}</span>
-                  </div>
-                  <div>
-                    <span className={labelClass}>Stream & Section</span>
-                    <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.stream} - {currentStudent.section}</span>
                   </div>
                 </div>
               )}
@@ -321,7 +338,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
           </div>
 
-          {/* Right Column (Calendar & Graph) */}
           <div className={`w-full md:w-2/3 border rounded-xl p-6 flex flex-col shadow-sm ${cardBg}`}>
             
             <div className="flex items-center justify-between mb-6">
@@ -348,7 +364,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
             )}
             <p className={`text-[10px] mt-4 mb-6 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Click any cell to manually toggle attendance status.</p>
 
-            {/* SEPARATED COMPONENT: Attendance Graph */}
             <AttendanceGraph 
               attendanceData={attendanceData}
               calYear={calYear}
