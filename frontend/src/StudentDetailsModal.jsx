@@ -289,22 +289,22 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   {currentStudent.name}
                 </h4>
                 
-                {/* Dynamic Trend Badge */}
+                {/* Dynamic Trend Badge (Arrow & % Only) */}
                 {(totalSessions > 0 || prevTotal > 0) && (
                   <div className="mt-2 inline-flex items-center">
-                    <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                    <span className={`flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full ${
                       isTrendUp 
                         ? 'bg-emerald-500/10 text-emerald-500' 
                         : 'bg-red-500/10 text-red-500'
                     }`}>
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         {isTrendUp ? (
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 15l7-7 7 7"></path>
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7"></path>
                         ) : (
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path>
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M19 9l-7 7-7-7"></path>
                         )}
                       </svg>
-                      {Math.abs(trendValue)}% vs last month
+                      {Math.abs(trendValue)}%
                     </span>
                   </div>
                 )}
