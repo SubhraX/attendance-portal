@@ -193,19 +193,19 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const days = [];
     
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className={`h-10 rounded-md ${isDarkMode ? 'bg-[#0f172a]/50' : 'bg-gray-50/50'}`}></div>);
+      days.push(<div key={`empty-${i}`} className={`h-10 rounded-md bg-transparent`}></div>);
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
       
-      let styleClass = isDarkMode ? 'bg-[#1e293b] text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'; 
-      if (status === 'present') styleClass = 'bg-emerald-500 text-white font-semibold shadow-sm hover:bg-emerald-600';
-      else if (status === 'absent') styleClass = 'bg-red-500 text-white font-semibold shadow-sm hover:bg-red-600';
+      let styleClass = isDarkMode ? 'bg-[#1e293b]/50 text-gray-300 hover:bg-gray-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-200'; 
+      if (status === 'present') styleClass = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20';
+      else if (status === 'absent') styleClass = 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20';
 
       days.push(
-        <div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm rounded-md cursor-pointer transition-colors ${styleClass}`}>
+        <div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-medium rounded-md cursor-pointer transition-colors ${styleClass}`}>
           {day}
         </div>
       );
@@ -215,39 +215,60 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
   const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
   const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
+  const totalSessions = presentCount + absentCount;
+  const attendanceRate = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
+  
+  const getProgressColor = () => {
+    if (attendanceRate >= 75) return 'bg-emerald-500';
+    if (attendanceRate >= 50) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  const getTextColor = () => {
+    if (attendanceRate >= 75) return 'text-emerald-500';
+    if (attendanceRate >= 50) return 'text-orange-500';
+    return 'text-red-500';
+  };
+
+  // Helper to extract initials for the avatar
+  const getInitials = (name) => {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
   
   const inputClass = `w-full border px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
-  const modalBg = isDarkMode ? 'bg-[#1e293b] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
-  const labelClass = `text-xs font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
+  const modalBg = isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
+  const cardBg = isDarkMode ? 'bg-[#1e293b] border-gray-700' : 'bg-gray-50 border-gray-200';
+  const labelClass = `text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
+  const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full ${isDarkMode ? '[&::-webkit-scrollbar-thumb]:bg-gray-700' : '[&::-webkit-scrollbar-thumb]:bg-gray-300'}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4 md:p-8">
-      <div className={`w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl shadow-xl overflow-hidden border ${modalBg}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 md:p-8">
+      <div className={`w-full max-w-[900px] max-h-[90vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border ${modalBg}`}>
         
         {/* Header */}
-        <div className={`flex justify-between items-center px-6 py-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+        <div className={`flex justify-between items-center px-6 py-4 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
-              <img src={`https://ui-avatars.com/api/?name=${currentStudent.name}&background=ea580c&color=fff&font-size=0.4`} alt="Avatar" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+              {getInitials(currentStudent.name)}
             </div>
-            <h3 className="text-base font-bold uppercase tracking-wide">Student Record</h3>
+            <h3 className="text-base font-bold uppercase tracking-widest">Student Record</h3>
           </div>
-          <button onClick={onClose} className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'hover:bg-gray-800 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'}`}>
+          <button onClick={onClose} className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-8">
+        <div className={`flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-white'}`}>
           
           {/* Left Column (Info & Actions) */}
           <div className="w-full md:w-1/3 flex flex-col gap-6">
             
             {/* Details Card */}
-            <div className={`border rounded-xl p-5 shadow-sm ${isDarkMode ? 'border-gray-700 bg-[#0f172a]/50' : 'border-gray-200 bg-gray-50'}`}>
+            <div className={`border rounded-xl p-5 ${cardBg}`}>
               <div className="flex justify-between items-center mb-4">
                 <span className={labelClass}>Profile Details</span>
-                <button onClick={() => setIsEditing(!isEditing)} className={`text-xs font-semibold px-2 py-1 rounded-md transition-colors ${isDarkMode ? 'text-orange-400 hover:bg-orange-500/10' : 'text-orange-600 hover:bg-orange-50'}`}>
+                <button onClick={() => setIsEditing(!isEditing)} className={`text-xs font-bold transition-colors ${isDarkMode ? 'text-orange-500 hover:text-orange-400' : 'text-orange-600 hover:text-orange-700'}`}>
                   {isEditing ? 'Cancel' : 'Edit'}
                 </button>
               </div>
@@ -311,24 +332,24 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   <button type="submit" className="bg-orange-600 text-white font-medium text-sm py-2 mt-2 rounded-lg hover:bg-orange-500 transition-colors">Save Changes</button>
                 </form>
               ) : (
-                <div className="text-sm flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <span className={`text-xs block ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Name</span>
-                    <span className="font-semibold">{currentStudent.name}</span>
+                    <span className={labelClass}>Name</span>
+                    <span className={`text-sm font-bold uppercase tracking-wide ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.name}</span>
                   </div>
                   <div>
-                    <span className={`text-xs block ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Email</span>
-                    <span className="font-medium break-all">{currentStudent.email}</span>
+                    <span className={labelClass}>Email</span>
+                    <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.email}</span>
                   </div>
                   <div>
-                    <span className={`text-xs block ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Stream & Section</span>
-                    <span className="font-medium">
+                    <span className={labelClass}>Stream & Section</span>
+                    <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                       {currentStudent.stream || 'Unassigned'} {currentStudent.section && currentStudent.section !== 'Unassigned' ? `- ${currentStudent.section}` : ''}
                     </span>
                   </div>
                   <div>
-                    <span className={`text-xs block ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Device Lock</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${currentStudent.deviceId ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-500'}`}>
+                    <span className={labelClass}>Device Lock</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${currentStudent.deviceId ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-gray-500/10 text-gray-500 border border-gray-500/20'}`}>
                       {currentStudent.deviceId ? 'Enforced' : 'Unlocked'}
                     </span>
                   </div>
@@ -338,41 +359,42 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-4">
-              <div className={`border rounded-xl p-4 shadow-sm ${isDarkMode ? 'border-gray-700 bg-[#0f172a]/50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`border rounded-xl p-4 flex flex-col justify-center ${cardBg}`}>
                 <p className={labelClass}>Present</p>
-                <p className="text-2xl font-bold text-emerald-500">{presentCount}</p>
+                <p className="text-2xl font-bold text-emerald-500 leading-none">{presentCount}</p>
               </div>
-              <div className={`border rounded-xl p-4 shadow-sm ${isDarkMode ? 'border-gray-700 bg-[#0f172a]/50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`border rounded-xl p-4 flex flex-col justify-center ${cardBg}`}>
                 <p className={labelClass}>Absent</p>
-                <p className="text-2xl font-bold text-red-500">{absentCount}</p>
+                <p className="text-2xl font-bold text-red-500 leading-none">{absentCount}</p>
               </div>
             </div>
 
             {/* Actions Card */}
-            <div className={`border rounded-xl p-5 shadow-sm mt-auto ${isDarkMode ? 'border-gray-700 bg-[#0f172a]/50' : 'border-gray-200 bg-gray-50'}`}>
+            <div className={`border rounded-xl p-5 mt-auto ${cardBg}`}>
               <span className={labelClass}>Admin Controls</span>
-              <div className="flex flex-col gap-2 mt-3">
-                <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`w-full text-sm font-medium py-2 px-3 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-white'}`}>
+              <div className="flex flex-col gap-3 mt-4">
+                <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-white'}`}>
                   Unlock Device
                 </button>
-                <button onClick={handleDeleteAttendanceOnly} className={`w-full text-sm font-medium py-2 px-3 border rounded-lg transition-colors ${isDarkMode ? 'border-red-900/50 text-red-400 hover:bg-red-900/20' : 'border-red-200 text-red-600 hover:bg-red-50'}`}>
+                <button onClick={handleDeleteAttendanceOnly} className={`w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 border rounded-lg transition-colors ${isDarkMode ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-600 hover:bg-red-50'}`}>
                   Clear Attendance
                 </button>
-                <button onClick={handleRemoveStudent} className="w-full text-sm font-medium py-2 px-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm">
+                <button onClick={handleRemoveStudent} className="w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm border border-red-600">
                   Delete Student
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Right Column (Calendar) */}
-          <div className={`w-full md:w-2/3 border rounded-xl p-6 flex flex-col shadow-sm ${isDarkMode ? 'border-gray-700 bg-[#0f172a]/50' : 'border-gray-200 bg-gray-50'}`}>
+          {/* Right Column (Calendar & Graph) */}
+          <div className={`w-full md:w-2/3 border rounded-xl p-6 flex flex-col ${cardBg}`}>
+            
             <div className="flex items-center justify-between mb-6">
-              <button onClick={() => shiftMonth(-1)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}>
+              <button onClick={() => shiftMonth(-1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
               </button>
-              <span className="font-bold text-sm uppercase tracking-wide">{monthNames[calMonth]} {calYear}</span>
-              <button onClick={() => shiftMonth(1)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-200 text-gray-600'}`}>
+              <span className={`font-bold text-sm uppercase tracking-widest ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{monthNames[calMonth]} {calYear}</span>
+              <button onClick={() => shiftMonth(1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
               </button>
             </div>
@@ -389,7 +411,43 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 </div>
               </div>
             )}
-            <p className={`text-xs mt-6 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Click any cell to manually toggle attendance status.</p>
+            <p className={`text-[10px] mt-4 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Click any cell to manually toggle attendance status.</p>
+
+            {/* Attendance Stats & Graph */}
+            <div className={`mt-auto pt-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className="flex justify-between items-end mb-3">
+                <div>
+                  <p className={labelClass}>Overall Compliance</p>
+                  <h4 className={`text-3xl font-extrabold ${getTextColor()}`}>
+                    {attendanceRate}%
+                  </h4>
+                </div>
+                <div className="text-right">
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Sessions: <span className={`font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>{totalSessions}</span></p>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className={`w-full h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                <div 
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${getProgressColor()}`}
+                  style={{ width: `${attendanceRate}%` }}
+                ></div>
+              </div>
+              
+              {/* Legend */}
+              <div className="flex gap-5 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Present ({presentCount})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Absent ({absentCount})</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
