@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
 import { STREAMS, STREAM_SECTIONS } from './FacultyRecords';
@@ -12,7 +12,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [animateGraph, setAnimateGraph] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(8); // Default 8 weeks
+  
+  // Graph States
+  const [zoomLevel, setZoomLevel] = useState(8); 
+  const [hoveredNode, setHoveredNode] = useState(null);
   
   const [editForm, setEditForm] = useState({ 
     name: student.name, 
@@ -57,7 +60,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStudent._id]);
 
-  // Re-trigger the drawing animation when month changes or modal opens
   useEffect(() => {
     setAnimateGraph(false);
     const timer = setTimeout(() => setAnimateGraph(true), 50);
@@ -93,9 +95,58 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   };
 
-  const handleResetDevice = async () => { /* Logic omitted for brevity, assumed intact */ };
-  const handleDeleteAttendanceOnly = async () => { /* Logic omitted for brevity, assumed intact */ };
-  const handleRemoveStudent = async () => { /* Logic omitted for brevity, assumed intact */ };
+  const handleResetDevice = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/reset-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ studentId: currentStudent._id })
+      });
+      if (res.ok) {
+        showToast("Device lock reset.");
+        setCurrentStudent({ ...currentStudent, deviceId: null });
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error unlocking device:", error);
+    }
+  };
+
+  const handleDeleteAttendanceOnly = async () => {
+    if (!window.confirm("Confirm: Wipe ALL attendance records for this student?")) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${currentStudent._id}/records`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showToast("Records cleared.");
+        setAttendanceData({});
+      }
+    } catch (error) {
+      console.error("Error deleting attendance:", error);
+    }
+  };
+
+  const handleRemoveStudent = async () => {
+    if (!window.confirm("Confirm: Delete student profile entirely?")) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        showToast("Student deleted.");
+        onUpdate();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Error removing student:", error);
+    }
+  };
 
   const shiftMonth = (offset) => {
     let newMonth = calMonth + offset;
@@ -135,26 +186,20 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   };
 
-  // -----------------------------------------------------
-  // NEW WEEK-WISE TREND GRAPH LOGIC
-  // -----------------------------------------------------
   const getWeeklyTrend = () => {
     const trend = [];
     const labels = [];
     const details = [];
     
-    // We anchor the graph to the last day of the currently viewed calendar month
     const endDate = new Date(calYear, calMonth + 1, 0); 
-    let lastValid = 0; // Default starts at 0%
+    let lastValid = 0; 
     
     for (let i = zoomLevel - 1; i >= 0; i--) {
-      // Calculate start and end date for each rolling week
       const weekEnd = new Date(endDate);
       weekEnd.setDate(weekEnd.getDate() - (i * 7));
       const weekStart = new Date(weekEnd);
       weekStart.setDate(weekStart.getDate() - 6);
 
-      // Create a neat label like "14 Nov"
       labels.push(`${weekStart.getDate()} ${monthNames[weekStart.getMonth()].substring(0,3)}`);
       
       let p = 0, t = 0;
@@ -176,12 +221,20 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         lastValid = pct;
         details.push(`${p}/${t} cls`);
       } else {
-        trend.push(lastValid); // Carry forward previous week's cumulative if no classes occurred
+        trend.push(lastValid); 
         details.push(`0/0 cls`);
       }
     }
     
     return { data: trend, labels, details };
+  };
+
+  const handleGraphWheel = (e) => {
+    if (e.deltaY < 0) {
+      setZoomLevel(prev => Math.max(4, prev - 1)); // Scroll up = zoom in
+    } else if (e.deltaY > 0) {
+      setZoomLevel(prev => Math.min(24, prev + 1)); // Scroll down = zoom out
+    }
   };
 
   const renderCalendar = () => {
@@ -211,6 +264,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const modalBg = isDarkMode ? 'bg-[#121826] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
   const cardBg = isDarkMode ? 'bg-[#1e293b] border-gray-700' : 'bg-gray-50 border-gray-200';
   const labelClass = `text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
+  const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-700`;
 
   // SVG Chart Dimensions
   const trendInfo = getWeeklyTrend();
@@ -248,10 +302,11 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         </div>
 
         {/* Body */}
-        <div className={`flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-[#121826]' : 'bg-white'}`}>
+        <div className={`flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-[#121826]' : 'bg-white'} ${customScrollbar}`}>
           
           {/* Left Column (Info & Actions) */}
           <div className="w-full md:w-1/3 flex flex-col gap-6">
+            
             <div className={`border rounded-xl p-5 ${cardBg}`}>
               <div className="flex justify-between items-center mb-4">
                 <span className={labelClass}>Profile Details</span>
@@ -308,6 +363,23 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <p className="text-3xl font-bold text-red-500 leading-none">{absentCount}</p>
               </div>
             </div>
+
+            {/* RESTORED: Admin Controls */}
+            <div className={`border rounded-xl p-5 mt-auto ${cardBg}`}>
+              <span className={labelClass}>Admin Controls</span>
+              <div className="flex flex-col gap-3 mt-4">
+                <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-white'}`}>
+                  Unlock Device
+                </button>
+                <button onClick={handleDeleteAttendanceOnly} className={`w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 border rounded-lg transition-colors ${isDarkMode ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-600 hover:bg-red-50'}`}>
+                  Clear Attendance
+                </button>
+                <button onClick={handleRemoveStudent} className="w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm border border-red-600">
+                  Delete Student
+                </button>
+              </div>
+            </div>
+
           </div>
 
           {/* Right Column (Calendar & Graph) */}
@@ -342,35 +414,19 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               
               {/* Graph Header: Zoom Controls & Overall Pct */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M4 18v-4h4v4H4zm6 0v-8h4v8h-4zm6 0V6h4v12h-4z"/>
-                  </svg>
-                  <h4 className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Weekly Trend</h4>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M4 18v-4h4v4H4zm6 0v-8h4v8h-4zm6 0V6h4v12h-4z"/>
+                    </svg>
+                    <h4 className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Weekly Trend</h4>
+                  </div>
+                  <span className={`text-[9px] uppercase font-bold tracking-widest ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ml-7`}>
+                    Scroll graph to zoom
+                  </span>
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  {/* Zoom Feature (changes number of weeks) */}
-                  <div className={`flex items-center border rounded-lg overflow-hidden ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-100'}`}>
-                    <button 
-                      onClick={() => setZoomLevel(Math.max(4, zoomLevel - 2))} // Zoom In = fewer weeks
-                      className={`px-2.5 py-1 text-lg font-bold leading-none transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-500 hover:text-black'}`}
-                      title="Zoom In"
-                    >
-                      +
-                    </button>
-                    <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border-x ${isDarkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
-                      {zoomLevel} Wks
-                    </span>
-                    <button 
-                      onClick={() => setZoomLevel(Math.min(16, zoomLevel + 2))} // Zoom Out = more weeks
-                      className={`px-2.5 py-1 text-lg font-bold leading-none transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-500 hover:text-black'}`}
-                      title="Zoom Out"
-                    >
-                      -
-                    </button>
-                  </div>
-
                   {/* Overall Percentage Bubble */}
                   <div className={`flex items-center gap-2 px-3 py-1 rounded-full shadow-inner ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'}`}>
                     <span className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Overall</span>
@@ -379,7 +435,11 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 </div>
               </div>
 
-              <div className="w-full overflow-x-auto overflow-y-visible">
+              {/* Scrollable Graph Container */}
+              <div 
+                className={`w-full overflow-x-auto overflow-y-hidden rounded-lg ${customScrollbar}`}
+                onWheel={handleGraphWheel}
+              >
                 <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto min-w-[400px]">
                   <defs>
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -426,7 +486,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     </>
                   )}
                   
-                  {/* Data Points, Vertical Guidelines, & Labels */}
+                  {/* Data Points, Vertical Guidelines, Labels & Hover Tooltips */}
                   {pointCoords.map((pt, i) => (
                     <g 
                       key={i}
@@ -438,8 +498,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     >
                       <line x1={pt.x} y1={paddingY} x2={pt.x} y2={svgHeight - 40} stroke={isDarkMode ? "#334155" : "#e2e8f0"} strokeWidth="0.5" strokeDasharray="4 4" style={{ transition: 'all 0.5s ease' }} />
                       
-                      <circle cx={pt.x} cy={pt.y} r="4.5" fill={isDarkMode ? "#1e293b" : "#ffffff"} stroke="#f43f5e" strokeWidth="2.5" style={{ transition: 'all 0.5s ease' }} />
-                      
                       <text x={pt.x} y={svgHeight - 22} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="10" textAnchor="middle" fontWeight="bold" style={{ transition: 'all 0.5s ease' }}>
                         {trendInfo.labels[i]}
                       </text>
@@ -448,13 +506,38 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                         {trendInfo.details[i]}
                       </text>
 
-                      {/* Tooltip dynamically translates so it never snaps abruptly */}
-                      <g style={{ transform: `translate(${pt.x}px, ${pt.y - 18}px)`, transition: 'transform 0.5s ease' }}>
-                        <rect x="-16" y="-12" width="32" height="15" rx="4" fill={isDarkMode ? "#334155" : "#475569"} />
-                        <text x="0" y="0" fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
+                      {/* Visible Node Circle (expands slightly on hover) */}
+                      <circle 
+                        cx={pt.x} cy={pt.y} 
+                        r={hoveredNode === i ? "6" : "4.5"} 
+                        fill={isDarkMode ? "#1e293b" : "#ffffff"} 
+                        stroke="#f43f5e" 
+                        strokeWidth="2.5" 
+                        style={{ transition: 'all 0.3s ease', pointerEvents: 'none' }} 
+                      />
+
+                      {/* Hover Tooltip (Fades in when hovering the invisible hit area below) */}
+                      <g style={{ 
+                        transform: `translate(${pt.x}px, ${pt.y - 20}px)`, 
+                        transition: 'all 0.2s ease-out',
+                        opacity: hoveredNode === i ? 1 : 0,
+                        pointerEvents: 'none'
+                      }}>
+                        <rect x="-18" y="-14" width="36" height="18" rx="4" fill={isDarkMode ? "#334155" : "#475569"} />
+                        <text x="0" y="-1" fill="#ffffff" fontSize="10" fontWeight="bold" textAnchor="middle">
                           {trendInfo.data[i]}%
                         </text>
                       </g>
+
+                      {/* Invisible Hit Area (makes hovering over points much easier) */}
+                      <circle 
+                        cx={pt.x} cy={pt.y} 
+                        r="18" 
+                        fill="transparent"
+                        className="cursor-pointer"
+                        onMouseEnter={() => setHoveredNode(i)}
+                        onMouseLeave={() => setHoveredNode(null)}
+                      />
                     </g>
                   ))}
                 </svg>
