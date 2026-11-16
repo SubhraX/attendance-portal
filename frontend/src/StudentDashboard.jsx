@@ -175,7 +175,7 @@ export default function StudentDashboard() {
           </button>
 
           {isSidebarExpanded && (
-            <div className={`mt-4 text-xs text-center font-bold uppercase tracking-widest ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className={`mt-4 text-[10px] text-center font-bold uppercase tracking-widest ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               &copy; {new Date().getFullYear()} BIT Mesra
             </div>
           )}
