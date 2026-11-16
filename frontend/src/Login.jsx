@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 export default function Login() {
   const [showSplash, setShowSplash] = useState(true);
   const [isFading, setIsFading] = useState(false);
-  
-  const [role, setRole] = useState('student'); 
+
+  const [role, setRole] = useState('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,10 +15,10 @@ export default function Login() {
 
   useEffect(() => {
     document.title = "ERP Login - BIT Mesra";
-    
+
     const fadeTimer = setTimeout(() => setIsFading(true), 1200);
     const removeTimer = setTimeout(() => setShowSplash(false), 1700);
-    
+
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);
@@ -32,8 +32,8 @@ export default function Login() {
 
     let deviceId = localStorage.getItem('deviceId');
     if (!deviceId) {
-      deviceId = window.crypto?.randomUUID 
-        ? window.crypto.randomUUID() 
+      deviceId = window.crypto?.randomUUID
+        ? window.crypto.randomUUID()
         : `device-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
       localStorage.setItem('deviceId', deviceId);
     }
@@ -52,7 +52,7 @@ export default function Login() {
           setIsLoading(false);
           return;
         }
-        
+
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
@@ -73,9 +73,9 @@ export default function Login() {
         <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
           <div className="relative flex items-center justify-center">
             <div className="absolute w-40 h-40 border-[4px] border-orange-100 border-t-orange-600 border-b-orange-600 rounded-full animate-spin"></div>
-            <img 
-              src="/BITS_logo.png" 
-              alt="BITS Mesra Logo" 
+            <img
+              src="/BITS_logo.png"
+              alt="BITS Mesra Logo"
               className="w-24 h-24 object-contain drop-shadow-lg"
             />
           </div>
@@ -83,7 +83,7 @@ export default function Login() {
         </div>
       )}
 
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center p-4 md:p-8 relative bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url('/BITS.png')` }}
       >
@@ -92,13 +92,13 @@ export default function Login() {
 
         {/* Semi-transparent Frosted Glass Container */}
         <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-lg bg-white/40 border border-white/60">
-          
+
           {/* Left Side */}
           <div className="w-full lg:w-[50%] p-8 lg:p-12 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-white/50 bg-white/20">
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-5 mb-10 text-center xl:text-left">
-              <img 
-                src="/BITS_logo.png" 
-                alt="BITS Mesra Logo" 
+              <img
+                src="/BITS_logo.png"
+                alt="BITS Mesra Logo"
                 className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0 drop-shadow-sm"
               />
               <div className="flex flex-col justify-center pt-1">
@@ -108,7 +108,7 @@ export default function Login() {
                 <h2 className="text-sm sm:text-base font-bold text-orange-700 uppercase tracking-wider">University ERP System</h2>
               </div>
             </div>
-            
+
             <div className="mb-6">
               <h3 className="text-sm font-bold text-orange-950 mb-2 uppercase tracking-wide border-b border-orange-950/20 pb-1 inline-block">Institute Vision</h3>
               <p className="text-orange-950/80 text-sm font-medium leading-relaxed font-semibold">
@@ -128,19 +128,18 @@ export default function Login() {
 
           {/* Right Side - Interactive Portal */}
           <div className="w-full lg:w-[50%] p-8 lg:p-14 flex flex-col justify-center bg-white/30">
-            
+
             <div className="w-full max-w-[360px] mx-auto animate-fade-in-up">
-              
+
               {/* Role Toggle Switch */}
               <div className="flex w-full p-1 bg-white/60 border border-white/50 backdrop-blur-md rounded-full mb-10 shadow-sm">
                 <button
                   type="button"
                   onClick={() => { setRole('student'); setStatus(''); }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-                    role === 'student' 
-                      ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]' 
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${role === 'student'
+                      ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]'
                       : 'bg-transparent text-orange-950/70 hover:text-orange-950 hover:bg-white/50'
-                  }`}
+                    }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                     <path d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -149,15 +148,14 @@ export default function Login() {
                   </svg>
                   Student Login
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={() => { setRole('instructor'); setStatus(''); }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-                    role === 'instructor' 
-                      ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]' 
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${role === 'instructor'
+                      ? 'bg-orange-600 text-white shadow-[0_2px_10px_rgba(234,88,12,0.3)]'
                       : 'bg-transparent text-orange-950/70 hover:text-orange-950 hover:bg-white/50'
-                  }`}
+                    }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -165,9 +163,9 @@ export default function Login() {
                   Faculty Login
                 </button>
               </div>
-              
+
               <form onSubmit={handleLogin} className="flex flex-col gap-5">
-                
+
                 {/* Email Input */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-700">
@@ -176,15 +174,15 @@ export default function Login() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h4" />
                     </svg>
                   </div>
-                  <input 
-                    type="text" 
-                    placeholder="Enrollment Number / Email" 
-                    className="w-full bg-white/70 backdrop-blur-sm border border-white text-orange-950 rounded-xl py-3.5 pl-14 pr-4 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder-gray-500 text-sm shadow-sm" 
-                    onChange={e => setEmail(e.target.value)} 
-                    required 
+                  <input
+                    type="text"
+                    placeholder="Enrollment Number / Email"
+                    className="w-full bg-white/70 backdrop-blur-sm border border-white text-orange-950 rounded-xl py-3.5 pl-14 pr-4 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder-gray-500 text-sm shadow-sm"
+                    onChange={e => setEmail(e.target.value)}
+                    required
                   />
                 </div>
-                
+
                 {/* Password Input */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-orange-700">
@@ -193,14 +191,14 @@ export default function Login() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
                     </svg>
                   </div>
-                  <input 
+                  <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password" 
-                    className="w-full bg-white/70 backdrop-blur-sm border border-white text-orange-950 rounded-xl py-3.5 pl-14 pr-12 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder-gray-500 text-sm shadow-sm" 
-                    onChange={e => setPassword(e.target.value)} 
-                    required 
+                    placeholder="Password"
+                    className="w-full bg-white/70 backdrop-blur-sm border border-white text-orange-950 rounded-xl py-3.5 pl-14 pr-12 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-bold placeholder-gray-500 text-sm shadow-sm"
+                    onChange={e => setPassword(e.target.value)}
+                    required
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-orange-600 hover:text-orange-800 transition-colors"
@@ -218,8 +216,8 @@ export default function Login() {
                   </button>
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isLoading}
                   className={`mt-4 flex justify-center items-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_5px_15px_rgba(234,88,12,0.3)] bg-orange-600 hover:bg-orange-500 active:scale-95 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
@@ -236,20 +234,24 @@ export default function Login() {
                   )}
                 </button>
               </form>
-              
+
               {status && (
                 <div className="mt-5 p-3 bg-red-50/90 backdrop-blur-md border border-red-200 text-red-600 rounded-xl text-sm text-center font-bold shadow-sm">
                   {status}
                 </div>
               )}
-              
+
             </div>
           </div>
         </div>
         {/* Copyright Stamp */}
-      <div className="absolute bottom-6 left-0 right-0 mx-auto text-center text-[10px] font-bold uppercase tracking-widest text-white/50 drop-shadow-sm pointer-events-none">
-        &copy; {new Date().getFullYear()} BIT Mesra
-      </div>
+        <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-50 pointer-events-none">
+          <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-md border border-white/10 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/90 m-0">
+              &copy; {new Date().getFullYear()} BIT Mesra
+            </p>
+          </div>
+        </div>
       </div>
     </>
   );
