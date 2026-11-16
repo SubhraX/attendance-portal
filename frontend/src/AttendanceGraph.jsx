@@ -52,7 +52,7 @@ export default function AttendanceGraph({ attendanceData, calYear, calMonth, isD
   // SVG Chart Setup (Adjusted padding for larger fonts)
   const svgWidth = 800; 
   const svgHeight = 180; 
-  const paddingX = 35; // Increased for larger Y-axis labels
+  const paddingX = 45; // Increased for larger Y-axis labels
   const paddingY = 45; // Increased to give tooltips more breathing room
   const chartW = svgWidth - paddingX * 2;
   const chartH = svgHeight - paddingY - 30; 
