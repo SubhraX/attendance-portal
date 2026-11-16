@@ -246,9 +246,9 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           
           <div className="w-full md:w-1/3 flex flex-col gap-6">
             
-            <div className={`border rounded-xl p-6 flex flex-col items-center text-center shadow-sm ${cardBg}`}>
-              <div className="relative group mb-4">
-                <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
+            <div className={`border rounded-xl p-6 flex items-center gap-5 shadow-sm ${cardBg}`}>
+              <div className="relative group shrink-0">
+                <div className="w-20 h-20 rounded-full bg-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -256,20 +256,22 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   )}
                 </div>
                 <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white">
-                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                   </svg>
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Upload</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </label>
               </div>
-              <h4 className={`font-bold uppercase tracking-wide text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {currentStudent.name}
-              </h4>
-              <span className={`text-xs mt-1 font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {currentStudent.stream} - {currentStudent.section}
-              </span>
+              <div className="flex flex-col text-left">
+                <h4 className={`font-bold uppercase tracking-wide text-lg leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {currentStudent.name}
+                </h4>
+                <span className={`text-xs mt-1 font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {currentStudent.stream} - {currentStudent.section}
+                </span>
+              </div>
             </div>
 
             <div className={`border rounded-xl p-5 shadow-sm ${cardBg}`}>
