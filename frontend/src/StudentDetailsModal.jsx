@@ -14,7 +14,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   
   // Graph States
   const [animateGraph, setAnimateGraph] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1); 
+  const [zoomLevel, setZoomLevel] = useState(12); // Number of weeks to display
   const [hoveredNode, setHoveredNode] = useState(null);
   
   const [editForm, setEditForm] = useState({ 
@@ -64,7 +64,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     setAnimateGraph(false);
     const timer = setTimeout(() => setAnimateGraph(true), 50);
     return () => clearTimeout(timer);
-  }, [calMonth, calYear, currentStudent._id]);
+  }, [calMonth, calYear, currentStudent._id, zoomLevel]);
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -187,47 +187,52 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   };
 
   const handleGraphWheel = (e) => {
-    // Prevent zooming too far in or out (scale between 1x and 4x)
     if (e.deltaY < 0) {
-      setZoomScale(prev => Math.min(4, prev + 0.25)); 
+      setZoomLevel(prev => Math.max(4, prev - 1)); // Scroll up = zoom in (fewer weeks)
     } else if (e.deltaY > 0) {
-      setZoomScale(prev => Math.max(1, prev - 0.25)); 
+      setZoomLevel(prev => Math.min(24, prev + 1)); // Scroll down = zoom out (more weeks)
     }
   };
 
-  // Calculate Cumulative Percentage for the Current Month (Day by Day)
-  const getDailyTrendForMonth = () => {
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  // Switch back to Weekly Trend for better scaling
+  const getWeeklyTrend = () => {
     const data = [];
-    let p = 0; 
-    let t = 0;
-    let lastPct = 0;
+    const endDate = new Date(calYear, calMonth + 1, 0); 
+    let lastPct = 0; 
     
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const status = attendanceData[dateStr] || 'none';
+    for (let i = zoomLevel - 1; i >= 0; i--) {
+      const weekEnd = new Date(endDate);
+      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekStart.getDate() - 6);
+
+      const label = `${weekStart.getDate()} ${monthNames[weekStart.getMonth()].substring(0,3)}`;
       
-      if (status === 'present') { p++; t++; }
-      else if (status === 'absent') { t++; }
+      let p = 0, t = 0;
+      Object.entries(attendanceData).forEach(([dateStr, status]) => {
+        const d = new Date(dateStr);
+        d.setHours(0,0,0,0);
+        const ws = new Date(weekStart); ws.setHours(0,0,0,0);
+        const we = new Date(weekEnd); we.setHours(23,59,59,999);
+        
+        if (d >= ws && d <= we && (status === 'present' || status === 'absent')) {
+          t++;
+          if (status === 'present') p++;
+        }
+      });
       
-      const pct = t > 0 ? Math.round((p / t) * 100) : lastPct;
+      let pct = lastPct;
+      let status = 'none';
+      if (t > 0) {
+        pct = Math.round((p / t) * 100);
+        status = pct >= 50 ? 'present' : 'absent'; // Base color off week's success rate
+      }
       lastPct = pct;
       
-      data.push({ day, status, pct, present: p, total: t });
-    }
-
-    // Normalizing to exactly 31 points so the CSS morphing transition (d path) never breaks between months
-    const normalizedData = [];
-    for (let i = 0; i < 31; i++) {
-      if (i < data.length) {
-        normalizedData.push(data[i]);
-      } else {
-        // Copy the final day to the remaining padding spots, but mark as hidden
-        normalizedData.push({ ...data[data.length - 1], isHidden: true });
-      }
+      data.push({ label, status, pct, present: p, total: t });
     }
     
-    return normalizedData;
+    return data;
   };
 
   const renderCalendar = () => {
@@ -254,19 +259,18 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const labelClass = `text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
   const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-700/50 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600/80`;
 
-  // Filter attendance for the specifically viewed month for the sidebar stats
-  const presentCount = Object.keys(attendanceData).filter(key => {
-    const d = new Date(key); return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
-  }).length;
-  const absentCount = Object.keys(attendanceData).filter(key => {
-    const d = new Date(key); return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'absent';
-  }).length;
+  // Stats
+  const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
+  const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
   const totalSessions = presentCount + absentCount;
   const attendanceRate = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
 
   // SVG Chart Dimensions
-  const trendData = getDailyTrendForMonth();
-  const svgWidth = 800; // Base internal width of SVG coordinate system
+  const trendData = getWeeklyTrend();
+  
+  // Dynamic scaling based on zoomLevel to ensure points are spread like a ruler
+  const baseWidth = 800;
+  const svgWidth = Math.max(baseWidth, trendData.length * 60); 
   const svgHeight = 170; 
   const paddingX = 30;
   const paddingY = 40; 
@@ -274,7 +278,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const chartH = svgHeight - paddingY - 30; 
   
   const pointCoords = trendData.map((d, i) => {
-    const x = paddingX + (i * (chartW / 30));
+    const x = paddingX + (i * (chartW / (trendData.length - 1 || 1)));
     const y = paddingY + chartH - (d.pct / 100 * chartH);
     return { x, y, ...d };
   });
@@ -417,7 +421,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M4 18v-4h4v4H4zm6 0v-8h4v8h-4zm6 0V6h4v12h-4z"/>
                     </svg>
-                    <h4 className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Daily Trend</h4>
+                    <h4 className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Weekly Trend</h4>
                   </div>
                   <span className={`text-[9px] uppercase font-bold tracking-widest ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ml-6 flex items-center gap-1.5`}>
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
@@ -440,11 +444,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               >
                 <svg 
                   viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
-                  className="h-auto transform-gpu"
-                  style={{ 
-                    minWidth: `${zoomScale * 100}%`,
-                    transition: 'min-width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' 
-                  }}
+                  className="h-auto min-w-full"
+                  style={{ transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
                 >
                   <defs>
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -466,7 +467,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     </text>
                   ))}
                   
-                  {/* SMOOTH MORPHING: CSS transition 'd' smoothly morphs path shifts instantly */}
+                  {/* SMOOTH MORPHING */}
                   {pointCoords.length > 0 && (
                     <>
                       <path 
@@ -491,11 +492,9 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                     </>
                   )}
                   
-                  {/* Data Points & Interactivity */}
+                  {/* Data Points */}
                   {pointCoords.map((pt, i) => {
-                    if (pt.isHidden) return null;
-                    
-                    // Logic for Green/Red Nodes
+                    // Logic for Green/Red Nodes based on > 50% weekly success rate
                     const isPresent = pt.status === 'present';
                     const isAbsent = pt.status === 'absent';
                     const isUnmarked = pt.status === 'none';
@@ -515,10 +514,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                       >
                         {/* Day Label on X Axis */}
                         <text x={pt.x} y={svgHeight - 12} fill={isDarkMode ? "#94a3b8" : "#64748b"} fontSize="9" textAnchor="middle" fontWeight="bold" className="select-none" style={{ transition: 'all 0.5s ease' }}>
-                          {pt.day}
+                          {pt.label}
                         </text>
 
-                        {/* Visible Node Circle - Glides smoothly via cx/cy transition */}
+                        {/* Visible Node Circle - Glides smoothly */}
                         <circle 
                           cx={pt.x} cy={pt.y} 
                           r={radius} 
@@ -528,7 +527,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                           style={{ transition: 'cx 0.5s cubic-bezier(0.4, 0, 0.2, 1), cy 0.5s cubic-bezier(0.4, 0, 0.2, 1), r 0.3s ease', pointerEvents: 'none' }} 
                         />
 
-                        {/* Hover Tooltip Group (Fades in when hovering the invisible hit area) */}
+                        {/* Hover Tooltip Group */}
                         <g style={{ 
                           transform: `translate(${pt.x}px, ${pt.y - 20}px)`, 
                           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-out',
@@ -541,7 +540,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                           </text>
                         </g>
 
-                        {/* Invisible Hit Area (makes hovering over points much easier) */}
+                        {/* Invisible Hit Area */}
                         <circle 
                           cx={pt.x} cy={pt.y} 
                           r="18" 
