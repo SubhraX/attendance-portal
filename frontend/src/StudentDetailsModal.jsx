@@ -291,29 +291,31 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
                 {/* Fixed-height wrapper prevents the name from shifting */}
                 <div className="h-5 mt-1.5 flex items-center">
-                  {prevTotal > 0 && (
-                    <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4">
 
-                      {/* Gain (Previous Month Present %) */}
-                      <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${isDarkMode ? 'text-[#34d399]' : 'text-emerald-600'
-                        }`}>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
-                        </svg>
-                        {Math.round((prevMonthPresent / prevTotal) * 100)}%
-                      </span>
+                    {/* Gain (Previous Month Present %) */}
+                    <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0
+                        ? (isDarkMode ? 'text-[#34d399]' : 'text-emerald-600')
+                        : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
+                      }`}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
+                      </svg>
+                      {prevTotal > 0 ? Math.round((prevMonthPresent / prevTotal) * 100) : 0}%
+                    </span>
 
-                      {/* Lose (Previous Month Absent %) */}
-                      <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${isDarkMode ? 'text-[#f87171]' : 'text-red-600'
-                        }`}>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 5v14m0 0l-5-5m5 5l5-5"></path>
-                        </svg>
-                        {Math.round((prevMonthAbsent / prevTotal) * 100)}%
-                      </span>
+                    {/* Lose (Previous Month Absent %) */}
+                    <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0
+                        ? (isDarkMode ? 'text-[#f87171]' : 'text-red-600')
+                        : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
+                      }`}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 5v14m0 0l-5-5m5 5l5-5"></path>
+                      </svg>
+                      {prevTotal > 0 ? Math.round((prevMonthAbsent / prevTotal) * 100) : 0}%
+                    </span>
 
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
