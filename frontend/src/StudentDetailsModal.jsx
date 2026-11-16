@@ -289,24 +289,26 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   {currentStudent.name}
                 </h4>
 
-                {/* Gain & Lose Percentages */}
+                {/* Gain & Lose Percentages - Minimal Text Style */}
                 {(totalSessions > 0 || prevTotal > 0) && (
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3 flex items-center gap-5">
 
-                    {/* Gain Badge (Present %) */}
-                    <span className={`flex items-center gap-1.5 text-sm font-black px-3 py-1 rounded-full ${isDarkMode ? 'bg-[#112a2c] text-[#00d789]' : 'bg-emerald-100 text-emerald-700'
+                    {/* Gain (Present %) */}
+                    <span className={`flex items-center gap-1 font-bold text-base tracking-wide ${isDarkMode ? 'text-[#34d399]' : 'text-emerald-600'
                       }`}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M4.5 15.75l7.5-7.5 7.5 7.5"></path>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {/* Straight Up Arrow */}
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
                       </svg>
                       {totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0}%
                     </span>
 
-                    {/* Lose Badge (Absent %) */}
-                    <span className={`flex items-center gap-1.5 text-sm font-black px-3 py-1 rounded-full ${isDarkMode ? 'bg-[#311f26] text-[#ff4b4b]' : 'bg-red-100 text-red-700'
+                    {/* Lose (Absent %) */}
+                    <span className={`flex items-center gap-1 font-bold text-base tracking-wide ${isDarkMode ? 'text-[#f87171]' : 'text-red-600'
                       }`}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {/* Straight Down Arrow */}
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 5v14m0 0l-5-5m5 5l5-5"></path>
                       </svg>
                       {totalSessions > 0 ? Math.round((absentCount / totalSessions) * 100) : 0}%
                     </span>
