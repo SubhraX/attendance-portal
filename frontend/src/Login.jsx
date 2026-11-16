@@ -246,6 +246,10 @@ export default function Login() {
             </div>
           </div>
         </div>
+        {/* Copyright Stamp */}
+      <div className="absolute bottom-6 left-0 right-0 mx-auto text-center text-[10px] font-bold uppercase tracking-widest text-white/50 drop-shadow-sm pointer-events-none">
+        &copy; {new Date().getFullYear()} BIT Mesra
+      </div>
       </div>
     </>
   );
