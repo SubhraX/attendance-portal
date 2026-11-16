@@ -8,20 +8,20 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const { isDarkMode } = useTheme();
   const { showToast } = useToast();
   const [currentStudent, setCurrentStudent] = useState(student);
-  
+
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [profileImage, setProfileImage] = useState(student.profileImage || null);
-  
-  const [editForm, setEditForm] = useState({ 
-    name: student.name, 
-    email: student.email, 
+
+  const [editForm, setEditForm] = useState({
+    name: student.name,
+    email: student.email,
     password: '',
     stream: student.stream || STREAMS[0],
     section: student.section || STREAM_SECTIONS[STREAMS[0]][0]
   });
-  
+
   const [attendanceData, setAttendanceData] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -54,7 +54,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       }
     };
     fetchAttendance();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStudent._id]);
 
   const handleEditSubmit = async (e) => {
@@ -64,13 +64,13 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       const payload = { name: editForm.name, email: editForm.email, stream: editForm.stream, section: editForm.section };
       if (editForm.password && editForm.password.trim() !== '') payload.password = editForm.password;
       else if (currentStudent.password) payload.password = currentStudent.password;
-      
+
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
-      
+
       if (res.ok) {
         showToast("Record updated successfully.");
         setIsEditing(false);
@@ -92,7 +92,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       const imageUrl = URL.createObjectURL(file);
       setProfileImage(imageUrl);
       // Add fetch call here to upload via FormData to your backend
-      showToast("Profile image updated."); 
+      showToast("Profile image updated.");
     }
   };
 
@@ -152,7 +152,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const shiftMonth = (offset) => {
     let newMonth = calMonth + offset;
     let newYear = calYear;
-    if (newMonth < 0) { newMonth = 11; newYear -= 1; } 
+    if (newMonth < 0) { newMonth = 11; newYear -= 1; }
     else if (newMonth > 11) { newMonth = 0; newYear += 1; }
     setCalMonth(newMonth); setCalYear(newYear);
   };
@@ -161,7 +161,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const currentStatus = attendanceData[dateString];
     let newStatus = !currentStatus ? 'present' : currentStatus === 'present' ? 'absent' : 'clear';
-    
+
     setAttendanceData(prev => {
       const updated = { ...prev };
       if (newStatus === 'clear') delete updated[dateString];
@@ -191,17 +191,17 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const days = [];
-    
+
     // Pad start of month
     for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="h-10 rounded-md bg-transparent"></div>);
+      days.push(<div key={`empty-${i}`} className="h-10 rounded-md bg-transparent"></div>);
     }
-    
+
     // Render actual days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
-      let styleClass = isDarkMode ? 'bg-[#1e293b]/50 text-gray-300 hover:bg-gray-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-200'; 
+      let styleClass = isDarkMode ? 'bg-[#1e293b]/50 text-gray-300 hover:bg-gray-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-200';
       if (status === 'present') styleClass = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]';
       else if (status === 'absent') styleClass = 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 shadow-[inset_0_0_8px_rgba(239,68,68,0.15)]';
       days.push(<div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-bold rounded-md cursor-pointer transition-colors ${styleClass}`}>{day}</div>);
@@ -211,14 +211,14 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const totalCells = firstDay + daysInMonth;
     const remainingCells = 42 - totalCells;
     for (let i = 0; i < remainingCells; i++) {
-        days.push(<div key={`empty-end-${i}`} className="h-10 rounded-md bg-transparent"></div>);
+      days.push(<div key={`empty-end-${i}`} className="h-10 rounded-md bg-transparent"></div>);
     }
 
     return days;
   };
 
   const getInitials = (name) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  
+
   const inputClass = `w-full border px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
   const modalBg = isDarkMode ? 'bg-[#121826] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
   const cardBg = isDarkMode ? 'bg-[#1e293b] border-gray-700' : 'bg-gray-50 border-gray-200';
@@ -238,7 +238,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   // NEW: Calculate Trend (Current Month vs Previous Month)
   const prevMonth = calMonth === 0 ? 11 : calMonth - 1;
   const prevYear = calMonth === 0 ? calYear - 1 : calYear;
-  
+
   let prevMonthPresent = 0;
   let prevMonthAbsent = 0;
   Object.keys(attendanceData).forEach(key => {
@@ -250,15 +250,15 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   });
   const prevTotal = prevMonthPresent + prevMonthAbsent;
   // If no previous month data, trend is 0
-  const prevMonthRate = prevTotal > 0 ? Math.round((prevMonthPresent / prevTotal) * 100) : attendanceRate; 
-  
+  const prevMonthRate = prevTotal > 0 ? Math.round((prevMonthPresent / prevTotal) * 100) : attendanceRate;
+
   const trendValue = attendanceRate - prevMonthRate;
   const isTrendUp = trendValue >= 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 md:p-8">
       <div className={`w-full max-w-[1000px] max-h-[90vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border ${modalBg}`}>
-        
+
         {/* Header */}
         <div className={`flex justify-between items-center px-6 py-4 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
           <h3 className="text-base font-bold uppercase tracking-widest">Student Record</h3>
@@ -269,10 +269,10 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
         {/* Body */}
         <div className={`flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-[#121826]' : 'bg-white'} ${customScrollbar}`}>
-          
+
           {/* Left Column (Info & Actions) */}
           <div className="w-full md:w-1/3 flex flex-col gap-6">
-            
+
             {/* Top Profile Card (Read Only) */}
             <div className={`border rounded-xl p-6 flex items-center gap-5 shadow-sm ${cardBg}`}>
               <div className="shrink-0">
@@ -288,23 +288,24 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <h4 className={`font-bold uppercase tracking-wide text-lg leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {currentStudent.name}
                 </h4>
-                
-                {/* Dynamic Trend Badge (Arrow & % Only) */}
+
+                {/* Dynamic Badges: Present and Absent Counters */}
                 {(totalSessions > 0 || prevTotal > 0) && (
-                  <div className="mt-2 inline-flex items-center">
-                    <span className={`flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full ${
-                      isTrendUp 
-                        ? 'bg-emerald-500/10 text-emerald-500' 
-                        : 'bg-red-500/10 text-red-500'
-                    }`}>
+                  <div className="mt-2 inline-flex items-center gap-2">
+                    {/* Up Counter (Present) */}
+                    <span className="flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {isTrendUp ? (
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7"></path>
-                        ) : (
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M19 9l-7 7-7-7"></path>
-                        )}
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 15l7-7 7 7"></path>
                       </svg>
-                      {Math.abs(trendValue)}%
+                      {presentCount}
+                    </span>
+
+                    {/* Down Counter (Absent) */}
+                    <span className="flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                      {absentCount}
                     </span>
                   </div>
                 )}
@@ -320,7 +321,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   Edit Info
                 </button>
               </div>
-              
+
               <div className="flex flex-col gap-4">
                 <div>
                   <span className={labelClass}>Email</span>
@@ -365,7 +366,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
           {/* Right Column (Calendar & Graph) */}
           <div className={`w-full md:w-2/3 border rounded-xl p-6 flex flex-col shadow-sm ${cardBg}`}>
-            
+
             <div className="flex items-center justify-between mb-6">
               <button onClick={() => shiftMonth(-1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -375,13 +376,13 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
               </button>
             </div>
-            
+
             {isModalLoading ? (
               <div className="flex-1 flex items-center justify-center text-sm text-gray-500 font-medium animate-pulse">Syncing ledger...</div>
             ) : (
               <div className="w-full min-w-[300px]">
                 <div className={`grid grid-cols-7 gap-2 mb-3 text-center text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => <div key={d}>{d}</div>)}
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
                 </div>
                 <div className="grid grid-cols-7 gap-2">
                   {renderCalendar()}
@@ -391,7 +392,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
             <p className={`text-[10px] mt-4 mb-6 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Click any cell to manually toggle attendance status.</p>
 
             {/* SEPARATED COMPONENT: Attendance Graph */}
-            <AttendanceGraph 
+            <AttendanceGraph
               attendanceData={attendanceData}
               calYear={calYear}
               calMonth={calMonth}
@@ -408,35 +409,35 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       {isEditing && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm p-4">
           <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 border ${modalBg}`}>
-            
+
             <h3 className="text-base font-bold uppercase tracking-widest mb-6 border-b pb-4 border-gray-200/20">
               Edit Student Info
             </h3>
-            
+
             <div className="flex justify-center mb-6">
-               <div className="relative group">
-                  <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
-                    {profileImage ? (
-                      <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      getInitials(editForm.name || currentStudent.name)
-                    )}
-                  </div>
-                  <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white">
-                    <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  </label>
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(editForm.name || currentStudent.name)
+                  )}
                 </div>
+                <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              </div>
             </div>
 
             <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
               <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className={inputClass} placeholder="Full Name" />
               <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className={inputClass} placeholder="Email Address" />
-              
+
               <div className="flex gap-2">
                 <select value={editForm.stream} onChange={e => setEditForm({ ...editForm, stream: e.target.value, section: STREAM_SECTIONS[e.target.value]?.[0] || 'Unassigned' })} className={inputClass}>
                   {STREAMS.map(stream => <option key={stream} value={stream}>{stream}</option>)}
@@ -445,7 +446,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                   {STREAM_SECTIONS[editForm.stream]?.map(sec => <option key={sec} value={sec}>{sec}</option>)}
                 </select>
               </div>
-              
+
               <div className="relative">
                 <input type={showPassword ? "text" : "password"} placeholder="New Password (Optional)" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={`${inputClass} pr-10`} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-2.5 flex items-center">
@@ -458,7 +459,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <button type="submit" className="bg-orange-600 text-white font-medium text-sm px-6 py-2 rounded-lg hover:bg-orange-500 shadow-md">Save Changes</button>
               </div>
             </form>
-            
+
           </div>
         </div>
       )}
