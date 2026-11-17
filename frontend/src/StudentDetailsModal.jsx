@@ -94,39 +94,66 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     const localUrl = URL.createObjectURL(file);
     setProfileImage(localUrl);
 
-    // 2. Prepare multipart form data
-    const formData = new FormData();
-    formData.append('profileImage', file);
-
-    try {
-      const token = localStorage.getItem('token');
-      // 3. Send file to the new backend route
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}/image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // Do NOT set Content-Type here; browser sets it automatically with the correct boundary for FormData
-        },
-        body: formData
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        showToast("Profile image uploaded successfully.");
-        // Optional: Update the local student object so the main table reflects the change
-        setCurrentStudent(prev => ({ ...prev, profileImage: data.profileImage }));
-        onUpdate();
+    // 2. Compress the image using a Canvas
+    const img = new Image();
+    img.src = localUrl;
+    
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Scale down to a max of 256x256 pixels for avatars
+      const MAX_SIZE = 256;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        }
       } else {
-        showToast(data.message || "Upload failed.");
-        // Revert preview on failure
-        setProfileImage(currentStudent.profileImage || null);
+        if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
       }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      showToast("Network error during upload.");
-      setProfileImage(currentStudent.profileImage || null);
-    }
+      
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to highly compressed WebP blob (0.8 quality)
+      canvas.toBlob(async (blob) => {
+        const formData = new FormData();
+        // Give it a filename with .webp extension
+        formData.append('profileImage', blob, 'avatar.webp');
+
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}/image`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast("Profile image uploaded successfully.");
+            setCurrentStudent(prev => ({ ...prev, profileImage: data.profileImage }));
+            onUpdate(); 
+          } else {
+            showToast(data.message || "Upload failed.");
+            setProfileImage(currentStudent.profileImage || null);
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          showToast("Network error during upload.");
+          setProfileImage(currentStudent.profileImage || null);
+        }
+      }, 'image/webp', 0.8);
+    };
   };
 
   const handleResetDevice = async () => {
