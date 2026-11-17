@@ -192,4 +192,20 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
   }
 });
 
+// GET a single student's fresh profile data
+router.get('/student/:id', protect, async (req, res) => {
+  try {
+    const student = await User.findById(req.params.id).select('-password'); 
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    res.json(student);
+  } catch (error) {
+    console.error("Error fetching student:", error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
