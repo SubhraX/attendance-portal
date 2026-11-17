@@ -1,10 +1,59 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
 const User = require('../models/User');
 const { protect, instructorOnly } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// Configure Multer for local image storage with validation
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Ensure an 'uploads' folder exists in your backend root
+  },
+  filename: function (req, file, cb) {
+    cb(null, `profile_${req.params.id}_${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max size
+  fileFilter: function (req, file, cb) {
+    const filetypes = /jpeg|jpg|png|webp/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Error: Only image files (jpeg, jpg, png, webp) are allowed!'));
+    }
+  }
+});
+
+// Upload Profile Image
+router.post('/student/:id/image', protect, instructorOnly, upload.single('profileImage'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No image file provided' });
+
+    const student = await User.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    // Store the relative path to the image in the database
+    student.profileImage = `/uploads/${req.file.filename}`;
+    await student.save();
+
+    res.status(200).json({ 
+      message: 'Profile image updated', 
+      profileImage: student.profileImage 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error uploading image', error: error.message });
+  }
+});
 
 // Register a new user
 router.post('/register', async (req, res) => {
@@ -47,7 +96,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '365d' }
     );
 
-    res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        role: user.role,
+        profileImage: user.profileImage // Included for immediate frontend display
+      } 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -104,7 +161,7 @@ router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
 // Edit a Student (Faculty Only)
 router.put('/student/:id', protect, instructorOnly, async (req, res) => {
   try {
-    const { name, email, password, stream, section } = req.body;
+    const { name, email, password, stream, section, profileImage } = req.body;
     const student = await User.findById(req.params.id);
     
     if (!student) return res.status(404).json({ message: 'Student not found' });
@@ -113,6 +170,9 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
     if (email) student.email = email;
     if (stream) student.stream = stream;
     if (section) student.section = section;
+    
+    // Support URL-based image updates without multipart form data
+    if (profileImage !== undefined) student.profileImage = profileImage;
     
     if (password && password.trim().length > 0) {
       student.password = password.trim(); 

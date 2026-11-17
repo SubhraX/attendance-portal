@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const crypto = require('crypto');
+const path = require('path');
 const connectDB = require('./config/db'); 
 const authRoutes = require('./routes/auth'); 
 const attendanceRoutes = require('./routes/attendance'); 
@@ -21,6 +22,9 @@ global.facultySockets = {};
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Allow public access to the uploads folder for profile pictures
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // <-- ADDED: static file serving
 
 // Mount Routes
 app.use('/api/auth', authRoutes); 

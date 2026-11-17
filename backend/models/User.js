@@ -8,7 +8,8 @@ const userSchema = mongoose.Schema({
   role: { type: String, enum: ['student', 'instructor'], default: 'student' },
   deviceId: { type: String, default: null }, 
   stream: { type: String, default: 'Unassigned' },
-  section: { type: String, default: 'Unassigned' } // NEW
+  section: { type: String, default: 'Unassigned' },
+  profileImage: { type: String, default: null } // <-- ADD THIS LINE
 }, { timestamps: true });
 
 // Hash password before saving
