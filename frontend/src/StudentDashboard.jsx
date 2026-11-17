@@ -108,12 +108,12 @@ export default function StudentDashboard() {
   };
 
   const presentCount = Object.keys(attendanceData).filter(key => {
-    const d = new Date(key); 
+    const d = new Date(key);
     return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
   }).length;
 
   const absentCount = Object.keys(attendanceData).filter(key => {
-    const d = new Date(key); 
+    const d = new Date(key);
     return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'absent';
   }).length;
 
@@ -231,11 +231,7 @@ export default function StudentDashboard() {
                 <div className={`border-b pb-6 md:pb-8 mb-6 md:mb-8 flex items-start gap-4 md:gap-5 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-md bg-slate-400 overflow-hidden shrink-0 border border-transparent">
                     <img
-                      src={
-                        studentInfo.profileImage
-                          ? (studentInfo.profileImage.startsWith('/') ? `https://attendance-portal-p2lp.onrender.com${studentInfo.profileImage}` : studentInfo.profileImage)
-                          : `https://ui-avatars.com/api/?name=${studentInfo.name}&background=ea580c&color=fff&font-size=0.4`
-                      }
+                      src={studentInfo.profileImage || `https://ui-avatars.com/api/?name=${studentInfo.name}&background=ea580c&color=fff&font-size=0.4`}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />

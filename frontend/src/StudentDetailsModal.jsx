@@ -312,7 +312,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <div className="w-20 h-20 rounded-full bg-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
                   {profileImage ? (
                     <img
-                      src={profileImage.startsWith('/') ? `https://attendance-portal-p2lp.onrender.com${profileImage}` : profileImage}
+                      src={profileImage}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -463,7 +463,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
                 <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
                   {profileImage ? (
                     <img
-                      src={profileImage.startsWith('/') ? `https://attendance-portal-p2lp.onrender.com${profileImage}` : profileImage}
+                      src={profileImage}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />

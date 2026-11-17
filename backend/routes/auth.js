@@ -15,15 +15,8 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure Multer for local image storage with validation
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Ensure an 'uploads' folder exists in your backend root
-  },
-  filename: function (req, file, cb) {
-    cb(null, `profile_${req.params.id}_${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
+// Configure Multer for MEMORY storage (Bypasses Render's file deletion)
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage,
@@ -36,12 +29,12 @@ const upload = multer({
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Error: Only image files (jpeg, jpg, png, webp) are allowed!'));
+      cb(new Error('Error: Only image files are allowed!'));
     }
   }
 });
 
-// Upload Profile Image
+// Upload Profile Image (Saves as Base64 to MongoDB)
 router.post('/student/:id/image', protect, instructorOnly, upload.single('profileImage'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No image file provided' });
@@ -49,8 +42,12 @@ router.post('/student/:id/image', protect, instructorOnly, upload.single('profil
     const student = await User.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
-    // Store the relative path to the image in the database
-    student.profileImage = `/uploads/${req.file.filename}`;
+    // Convert the file buffer to a Base64 Data URL
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    // Store the giant string directly in the database
+    student.profileImage = dataURI;
     await student.save();
 
     res.status(200).json({ 
