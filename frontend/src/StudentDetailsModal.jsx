@@ -103,8 +103,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
       // 3. Send file to the new backend route
       const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}/image`, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}` 
+        headers: {
+          'Authorization': `Bearer ${token}`
           // Do NOT set Content-Type here; browser sets it automatically with the correct boundary for FormData
         },
         body: formData
@@ -116,7 +116,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         showToast("Profile image uploaded successfully.");
         // Optional: Update the local student object so the main table reflects the change
         setCurrentStudent(prev => ({ ...prev, profileImage: data.profileImage }));
-        onUpdate(); 
+        onUpdate();
       } else {
         showToast(data.message || "Upload failed.");
         // Revert preview on failure
@@ -311,7 +311,11 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               <div className="shrink-0">
                 <div className="w-20 h-20 rounded-full bg-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
                   {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    <img
+                      src={profileImage.startsWith('/') ? `https://attendance-portal-p2lp.onrender.com${profileImage}` : profileImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     getInitials(currentStudent.name)
                   )}
@@ -328,8 +332,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
                     {/* Gain (Previous Month Present %) */}
                     <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0
-                        ? (isDarkMode ? 'text-[#34d399]' : 'text-emerald-600')
-                        : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
+                      ? (isDarkMode ? 'text-[#34d399]' : 'text-emerald-600')
+                      : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
                       }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
@@ -339,8 +343,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
                     {/* Lose (Previous Month Absent %) */}
                     <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0
-                        ? (isDarkMode ? 'text-[#f87171]' : 'text-red-600')
-                        : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
+                      ? (isDarkMode ? 'text-[#f87171]' : 'text-red-600')
+                      : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
                       }`}>
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 5v14m0 0l-5-5m5 5l5-5"></path>
@@ -458,7 +462,11 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
               <div className="relative group">
                 <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
                   {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    <img
+                      src={profileImage.startsWith('/') ? `https://attendance-portal-p2lp.onrender.com${profileImage}` : profileImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     getInitials(editForm.name || currentStudent.name)
                   )}
