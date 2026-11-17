@@ -77,7 +77,7 @@ export default function StudentStatsTab({
           <div className="pt-1 md:pt-2 flex flex-col justify-center">
             <p className={`text-[10px] md:text-xs font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>USER PROFILE</p>
             <h3 className={`text-xl md:text-3xl font-extrabold uppercase truncate tracking-wide ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-              {studentInfo.name}
+              {studentInfo?.name || "Student"}
             </h3>
           </div>
         </div>
@@ -106,23 +106,27 @@ export default function StudentStatsTab({
               </p>
             </div>
 
-            {/* Account Details Box moved up here */}
+            {/* Account Details Box */}
             <div className={`p-4 md:p-5 rounded-lg border shadow-sm flex flex-col gap-4 mt-2 ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
               <p className={`text-[10px] font-mono uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Account Details</p>
               <div className="flex flex-col gap-3">
+                
                 <div>
                   <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Email</p>
-                  <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{studentInfo.email}</p>
+                  <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                    {studentInfo?.email ? studentInfo.email : <span className="opacity-50 italic font-normal text-xs">Missing (Please Log Out & Log In)</span>}
+                  </p>
                 </div>
-                {/* Only render stream/section if they are defined and NOT "Unassigned" */}
-                {studentInfo.stream && studentInfo.stream !== 'Unassigned' && (
-                  <div>
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
-                    <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                      {studentInfo.stream} {studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}
-                    </p>
-                  </div>
-                )}
+                
+                <div>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
+                  <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                    {studentInfo?.stream && studentInfo.stream !== 'Unassigned' 
+                      ? `${studentInfo.stream} ${studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}`
+                      : <span className="opacity-50 italic font-normal text-xs">Missing (Please Log Out & Log In)</span>}
+                  </p>
+                </div>
+                
               </div>
             </div>
           </div>
