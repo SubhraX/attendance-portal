@@ -86,13 +86,46 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
-      // Add fetch call here to upload via FormData to your backend
-      showToast("Profile image updated.");
+    if (!file) return;
+
+    // 1. Show immediate local preview
+    const localUrl = URL.createObjectURL(file);
+    setProfileImage(localUrl);
+
+    // 2. Prepare multipart form data
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      // 3. Send file to the new backend route
+      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}/image`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}` 
+          // Do NOT set Content-Type here; browser sets it automatically with the correct boundary for FormData
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast("Profile image uploaded successfully.");
+        // Optional: Update the local student object so the main table reflects the change
+        setCurrentStudent(prev => ({ ...prev, profileImage: data.profileImage }));
+        onUpdate(); 
+      } else {
+        showToast(data.message || "Upload failed.");
+        // Revert preview on failure
+        setProfileImage(currentStudent.profileImage || null);
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      showToast("Network error during upload.");
+      setProfileImage(currentStudent.profileImage || null);
     }
   };
 
