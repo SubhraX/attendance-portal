@@ -12,7 +12,6 @@ export default function StudentStatsTab({
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const panelClass = isDarkMode ? "bg-[#161b26] border-gray-800" : "bg-white border-gray-200";
 
-  // Calculate stats for the currently viewed month
   const presentCount = Object.keys(attendanceData).filter(key => {
     const d = new Date(key);
     return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
@@ -31,12 +30,10 @@ export default function StudentStatsTab({
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const days = [];
     
-    // Pad start of month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10 md:h-12 rounded-md bg-transparent"></div>);
     }
 
-    // Render actual days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
@@ -55,7 +52,6 @@ export default function StudentStatsTab({
       );
     }
     
-    // Force exactly 42 cells (6 rows) so the layout never jumps when switching months
     const totalCells = firstDay + daysInMonth;
     const remainingCells = 42 - totalCells;
     for (let i = 0; i < remainingCells; i++) {
@@ -69,7 +65,7 @@ export default function StudentStatsTab({
     <div className="w-full flex flex-col h-full relative z-10 max-w-5xl mx-auto">
       <div className={`flex flex-col p-6 md:p-10 rounded-xl border w-full shadow-lg ${panelClass}`}>
 
-        {/* Profile Header section (Cleaned) */}
+        {/* Profile Header */}
         <div className={`border-b pb-6 md:pb-8 mb-6 md:mb-8 flex items-start gap-4 md:gap-6 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
           <div className="w-16 h-16 md:w-24 md:h-24 rounded-md bg-slate-400 overflow-hidden shrink-0 border border-transparent shadow-sm">
             <img
@@ -89,17 +85,19 @@ export default function StudentStatsTab({
         {/* Body Layout */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           
-          {/* Left Side: Stats & Details */}
-          <div className="w-full lg:w-1/3 flex flex-col gap-6 md:gap-8 shrink-0">
+          {/* Left Side: Stats & Account Details */}
+          <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
             <div>
               <p className={`text-[10px] md:text-xs font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>VERIFIED ATTENDANCE</p>
               <p className={`font-bold text-4xl md:text-5xl ${isDarkMode ? 'text-emerald-500' : 'text-emerald-600'}`}>{presentCount}</p>
             </div>
-            <div>
+            
+            <div className="mt-2">
               <p className={`text-[10px] md:text-xs font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>MISSED SESSIONS</p>
               <p className={`font-bold text-4xl md:text-5xl ${isDarkMode ? 'text-red-500' : 'text-red-600'}`}>{absentCount}</p>
             </div>
-            <div className={`p-4 md:p-5 rounded-lg border shadow-sm ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+            
+            <div className={`p-4 md:p-5 mt-2 rounded-lg border shadow-sm ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
               <p className={`text-[10px] font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>CALCULATED METRIC</p>
               <p className={`font-bold text-lg md:text-xl ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                 {totalSessions > 0
@@ -108,15 +106,15 @@ export default function StudentStatsTab({
               </p>
             </div>
 
-            {/* Profile Details Moved Here */}
-            <div className={`p-4 md:p-5 rounded-lg border shadow-sm mt-auto flex flex-col gap-4 ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+            {/* Account Details Box moved up here */}
+            <div className={`p-4 md:p-5 rounded-lg border shadow-sm flex flex-col gap-4 mt-2 ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
               <p className={`text-[10px] font-mono uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Account Details</p>
               <div className="flex flex-col gap-3">
                 <div>
                   <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Email</p>
                   <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{studentInfo.email}</p>
                 </div>
-                {/* Only renders if the student actually has an assigned stream */}
+                {/* Only render stream/section if they are defined and NOT "Unassigned" */}
                 {studentInfo.stream && studentInfo.stream !== 'Unassigned' && (
                   <div>
                     <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
@@ -132,7 +130,7 @@ export default function StudentStatsTab({
           {/* Right Side: Calendar & Graph */}
           <div className="flex-1 overflow-x-hidden flex flex-col gap-8">
             
-            {/* Cleanly padded Calendar Section */}
+            {/* Calendar Section */}
             <div className="w-full bg-transparent">
               <div className="flex items-center justify-between mb-6">
                 <button onClick={() => onMonthChange(-1)} className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-black hover:bg-gray-200'}`}>
@@ -160,7 +158,7 @@ export default function StudentStatsTab({
               )}
             </div>
 
-            {/* Injected Attendance Graph */}
+            {/* Attendance Graph */}
             {!isLoadingStats && (
               <div className="w-full mt-2">
                 <AttendanceGraph 
