@@ -107,8 +107,15 @@ export default function StudentDashboard() {
     return days;
   };
 
-  const presentCount = Object.values(attendanceData).filter(s => s === 'present').length;
-  const absentCount = Object.values(attendanceData).filter(s => s === 'absent').length;
+  const presentCount = Object.keys(attendanceData).filter(key => {
+    const d = new Date(key); 
+    return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
+  }).length;
+
+  const absentCount = Object.keys(attendanceData).filter(key => {
+    const d = new Date(key); 
+    return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'absent';
+  }).length;
 
   const bgImage = isDarkMode ? "url('/BITS_Night.png')" : "url('/BITS.png')";
   const overlayClass = isDarkMode ? "bg-[#0b101a]/90 backdrop-blur-sm" : "bg-[#fffaf0]/90 backdrop-blur-sm";
