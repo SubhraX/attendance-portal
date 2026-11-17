@@ -1,13 +1,15 @@
 export default function AttendanceCalendar({
   studentId,
-  attendanceData,
+  attendanceData = {},
   setAttendanceData,
   calYear,
   setCalYear,
   calMonth,
   setCalMonth,
   isDarkMode,
-  isModalLoading
+  isModalLoading,
+  onMonthChange,
+  onDayClick
 }) {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -33,7 +35,8 @@ export default function AttendanceCalendar({
 
     try {
       const token = localStorage.getItem('token');
-      fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/manual`, {
+      // Added await here
+      await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/manual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ date: dateString, status: newStatus })
@@ -66,7 +69,23 @@ export default function AttendanceCalendar({
       let styleClass = isDarkMode ? 'bg-[#1e293b]/50 text-gray-300 hover:bg-gray-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-200';
       if (status === 'present') styleClass = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]';
       else if (status === 'absent') styleClass = 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 shadow-[inset_0_0_8px_rgba(239,68,68,0.15)]';
-      days.push(<div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-bold rounded-md cursor-pointer transition-colors ${styleClass}`}>{day}</div>);
+      
+      days.push(
+        <div 
+          key={day} 
+          onClick={() => {
+            // Use onDayClick prop if it exists, otherwise fall back to internal handler
+            if (typeof onDayClick === 'function') {
+                onDayClick(day);
+            } else {
+                handleDayClick(day);
+            }
+          }} 
+          className={`h-10 flex items-center justify-center text-sm font-bold rounded-md cursor-pointer transition-colors ${styleClass}`}
+        >
+          {day}
+        </div>
+      );
     }
 
     // Pad end of month to force exactly 42 cells (6 rows)
@@ -82,11 +101,11 @@ export default function AttendanceCalendar({
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <button onClick={() => shiftMonth(-1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
+        <button onClick={() => typeof onMonthChange === 'function' ? onMonthChange(-1) : shiftMonth(-1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
         <span className={`font-bold text-sm uppercase tracking-widest ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{monthNames[calMonth]} {calYear}</span>
-        <button onClick={() => shiftMonth(1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
+        <button onClick={() => typeof onMonthChange === 'function' ? onMonthChange(1) : shiftMonth(1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
       </div>

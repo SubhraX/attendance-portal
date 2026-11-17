@@ -19,8 +19,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
 
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
@@ -103,79 +101,8 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   };
 
-  const shiftMonth = (offset) => {
-    let newMonth = calMonth + offset;
-    let newYear = calYear;
-    if (newMonth < 0) { newMonth = 11; newYear -= 1; }
-    else if (newMonth > 11) { newMonth = 0; newYear += 1; }
-    setCalMonth(newMonth); setCalYear(newYear);
-  };
-
-  const handleDayClick = async (day) => {
-    const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const currentStatus = attendanceData[dateString];
-    let newStatus = !currentStatus ? 'present' : currentStatus === 'present' ? 'absent' : 'clear';
-
-    setAttendanceData(prev => {
-      const updated = { ...prev };
-      if (newStatus === 'clear') delete updated[dateString];
-      else updated[dateString] = newStatus;
-      return updated;
-    });
-
-    try {
-      const token = localStorage.getItem('token');
-      fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${currentStudent._id}/manual`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ date: dateString, status: newStatus })
-      });
-    } catch (error) {
-      console.error("Error updating day status:", error);
-      setAttendanceData(prev => {
-        const reverted = { ...prev };
-        if (currentStatus) reverted[dateString] = currentStatus;
-        else delete reverted[dateString];
-        return reverted;
-      });
-    }
-  };
-
-  const renderCalendar = () => {
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const days = [];
-
-    // Pad start of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-10 rounded-md bg-transparent"></div>);
-    }
-
-    // Render actual days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const status = attendanceData[dateString];
-      let styleClass = isDarkMode ? 'bg-[#1e293b]/50 text-gray-300 hover:bg-gray-700' : 'bg-gray-50 text-gray-600 hover:bg-gray-200';
-      if (status === 'present') styleClass = 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]';
-      else if (status === 'absent') styleClass = 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 shadow-[inset_0_0_8px_rgba(239,68,68,0.15)]';
-      days.push(<div key={day} onClick={() => handleDayClick(day)} className={`h-10 flex items-center justify-center text-sm font-bold rounded-md cursor-pointer transition-colors ${styleClass}`}>{day}</div>);
-    }
-
-    // Pad end of month to force exactly 42 cells (6 rows)
-    const totalCells = firstDay + daysInMonth;
-    const remainingCells = 42 - totalCells;
-    for (let i = 0; i < remainingCells; i++) {
-      days.push(<div key={`empty-end-${i}`} className="h-10 rounded-md bg-transparent"></div>);
-    }
-
-    return days;
-  };
-
-  const getInitials = (name) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-
   const modalBg = isDarkMode ? 'bg-[#121826] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
   const cardBg = isDarkMode ? 'bg-[#1e293b] border-gray-700' : 'bg-gray-50 border-gray-200';
-  const labelClass = `text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
   const customScrollbar = `[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-700/50 hover:[&::-webkit-scrollbar-thumb]:bg-gray-600/80`;
 
   // Stats for Currently Viewed Month (Existing)
@@ -238,13 +165,15 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
           <div className={`w-full md:w-2/3 border rounded-xl p-6 flex flex-col shadow-sm ${cardBg}`}>
 
             <AttendanceCalendar 
+              studentId={currentStudent._id}
               attendanceData={attendanceData}
+              setAttendanceData={setAttendanceData}
               calYear={calYear}
+              setCalYear={setCalYear}
               calMonth={calMonth}
+              setCalMonth={setCalMonth}
               isModalLoading={isModalLoading}
               isDarkMode={isDarkMode}
-              onMonthChange={shiftMonth}
-              onDayClick={handleDayClick}
             />
 
             {/* SEPARATED COMPONENT: Attendance Graph */}
