@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { STREAMS, STREAM_SECTIONS } from './FacultyRecords';
+import { STREAMS, STREAM_SECTIONS } from '../FacultyRecords';
 
 export default function FacultyFilterBar({
   searchQuery,
