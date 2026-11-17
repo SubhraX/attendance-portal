@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
-import { STREAMS, STREAM_SECTIONS } from './FacultyRecords';
 import AttendanceGraph from './AttendanceGraph';
+import AttendanceCalendar from './AttendanceCalendar';
+import StudentProfileSidebar from './StudentProfileSidebar';
+import EditStudentForm from './EditStudentForm';
 
 export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const { isDarkMode } = useTheme();
@@ -11,16 +13,7 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
   const [isModalLoading, setIsModalLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [profileImage, setProfileImage] = useState(student.profileImage || null);
-
-  const [editForm, setEditForm] = useState({
-    name: student.name,
-    email: student.email,
-    password: '',
-    stream: student.stream || STREAMS[0],
-    section: student.section || STREAM_SECTIONS[STREAMS[0]][0]
-  });
 
   const [attendanceData, setAttendanceData] = useState({});
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -56,105 +49,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     fetchAttendance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStudent._id]);
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      const payload = { name: editForm.name, email: editForm.email, stream: editForm.stream, section: editForm.section };
-      if (editForm.password && editForm.password.trim() !== '') payload.password = editForm.password;
-      else if (currentStudent.password) payload.password = currentStudent.password;
-
-      const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        showToast("Record updated successfully.");
-        setIsEditing(false);
-        setCurrentStudent({ ...currentStudent, name: editForm.name, email: editForm.email, stream: editForm.stream, section: editForm.section });
-        onUpdate();
-      } else {
-        const data = await res.json();
-        showToast(data.message || "Update failed. Check required fields.");
-      }
-    } catch (error) {
-      console.error("Error updating student:", error);
-      showToast("Network error. Could not update profile.");
-    }
-  };
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // 1. Show immediate local preview
-    const localUrl = URL.createObjectURL(file);
-    setProfileImage(localUrl);
-
-    // 2. Compress the image using a Canvas
-    const img = new Image();
-    img.src = localUrl;
-    
-    img.onload = async () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Scale down to a max of 256x256 pixels for avatars
-      const MAX_SIZE = 256;
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > height) {
-        if (width > MAX_SIZE) {
-          height *= MAX_SIZE / width;
-          width = MAX_SIZE;
-        }
-      } else {
-        if (height > MAX_SIZE) {
-          width *= MAX_SIZE / height;
-          height = MAX_SIZE;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to highly compressed WebP blob (0.8 quality)
-      canvas.toBlob(async (blob) => {
-        const formData = new FormData();
-        // Give it a filename with .webp extension
-        formData.append('profileImage', blob, 'avatar.webp');
-
-        try {
-          const token = localStorage.getItem('token');
-          const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${currentStudent._id}/image`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-          });
-
-          const data = await res.json();
-
-          if (res.ok) {
-            showToast("Profile image uploaded successfully.");
-            setCurrentStudent(prev => ({ ...prev, profileImage: data.profileImage }));
-            onUpdate(); 
-          } else {
-            showToast(data.message || "Upload failed.");
-            setProfileImage(currentStudent.profileImage || null);
-          }
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          showToast("Network error during upload.");
-          setProfileImage(currentStudent.profileImage || null);
-        }
-      }, 'image/webp', 0.8);
-    };
-  };
 
   const handleResetDevice = async () => {
     try {
@@ -279,7 +173,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
   const getInitials = (name) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-  const inputClass = `w-full border px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${isDarkMode ? 'bg-[#0f172a] border-gray-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
   const modalBg = isDarkMode ? 'bg-[#121826] border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900';
   const cardBg = isDarkMode ? 'bg-[#1e293b] border-gray-700' : 'bg-gray-50 border-gray-200';
   const labelClass = `text-[10px] font-semibold uppercase tracking-wider mb-1 block ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`;
@@ -309,11 +202,6 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
     }
   });
   const prevTotal = prevMonthPresent + prevMonthAbsent;
-  // If no previous month data, trend is 0
-  const prevMonthRate = prevTotal > 0 ? Math.round((prevMonthPresent / prevTotal) * 100) : attendanceRate;
-
-  const trendValue = attendanceRate - prevMonthRate;
-  const isTrendUp = trendValue >= 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 md:p-8">
@@ -331,136 +219,33 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
         <div className={`flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-[#121826]' : 'bg-white'} ${customScrollbar}`}>
 
           {/* Left Column (Info & Actions) */}
-          <div className="w-full md:w-1/3 flex flex-col gap-6">
-
-            {/* Top Profile Card (Read Only) */}
-            <div className={`border rounded-xl p-6 flex items-center gap-5 shadow-sm ${cardBg}`}>
-              <div className="shrink-0">
-                <div className="w-20 h-20 rounded-full bg-orange-600 flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
-                  {profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    getInitials(currentStudent.name)
-                  )}
-                </div>
-              </div>
-              <div className="flex flex-col text-left py-1">
-                <h4 className={`font-bold uppercase tracking-wide text-lg leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {currentStudent.name}
-                </h4>
-
-                {/* Fixed-height wrapper prevents the name from shifting */}
-                <div className="h-5 mt-1.5 flex items-center">
-                  <div className="flex items-center gap-4">
-
-                    {/* Gain (Previous Month Present %) */}
-                    <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0
-                      ? (isDarkMode ? 'text-[#34d399]' : 'text-emerald-600')
-                      : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
-                      }`}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
-                      </svg>
-                      {prevTotal > 0 ? Math.round((prevMonthPresent / prevTotal) * 100) : 0}%
-                    </span>
-
-                    {/* Lose (Previous Month Absent %) */}
-                    <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0
-                      ? (isDarkMode ? 'text-[#f87171]' : 'text-red-600')
-                      : (isDarkMode ? 'text-gray-600' : 'text-gray-400')
-                      }`}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 5v14m0 0l-5-5m5 5l5-5"></path>
-                      </svg>
-                      {prevTotal > 0 ? Math.round((prevMonthAbsent / prevTotal) * 100) : 0}%
-                    </span>
-
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Account Details Card */}
-            <div className={`border rounded-xl p-5 shadow-sm ${cardBg}`}>
-              <div className="flex justify-between items-center mb-4">
-                <span className={labelClass}>Account Details</span>
-                <button onClick={() => setIsEditing(true)} className={`text-xs font-bold transition-colors ${isDarkMode ? 'text-orange-500 hover:text-orange-400' : 'text-orange-600 hover:text-orange-700'}`}>
-                  Edit Info
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div>
-                  <span className={labelClass}>Email</span>
-                  <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.email}</span>
-                </div>
-                <div>
-                  <span className={labelClass}>Stream & Section</span>
-                  <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentStudent.stream} - {currentStudent.section}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Present/Absent Counters */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className={`border rounded-xl p-4 flex flex-col justify-center shadow-sm ${cardBg}`}>
-                <p className={labelClass}>Present</p>
-                <p className="text-3xl font-extrabold text-emerald-500 leading-none">{presentCount}</p>
-              </div>
-              <div className={`border rounded-xl p-4 flex flex-col justify-center shadow-sm ${cardBg}`}>
-                <p className={labelClass}>Absent</p>
-                <p className="text-3xl font-extrabold text-red-500 leading-none">{absentCount}</p>
-              </div>
-            </div>
-
-            {/* Admin Controls */}
-            <div className={`border rounded-xl p-5 mt-auto shadow-sm ${cardBg}`}>
-              <span className={labelClass}>Admin Controls</span>
-              <div className="flex flex-col gap-3 mt-4">
-                <button onClick={handleResetDevice} disabled={!currentStudent.deviceId} className={`w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-white'}`}>
-                  Unlock Device
-                </button>
-                <button onClick={handleDeleteAttendanceOnly} className={`w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 border rounded-lg transition-colors ${isDarkMode ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-600 hover:bg-red-50'}`}>
-                  Clear Attendance
-                </button>
-                <button onClick={handleRemoveStudent} className="w-full text-xs font-bold uppercase tracking-wide py-2.5 px-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm border border-red-600">
-                  Delete Student
-                </button>
-              </div>
-            </div>
-
-          </div>
+          <StudentProfileSidebar 
+            student={currentStudent}
+            profileImage={profileImage}
+            isDarkMode={isDarkMode}
+            prevTotal={prevTotal}
+            prevMonthPresent={prevMonthPresent}
+            prevMonthAbsent={prevMonthAbsent}
+            presentCount={presentCount}
+            absentCount={absentCount}
+            onEditClick={() => setIsEditing(true)}
+            onResetDevice={handleResetDevice}
+            onDeleteAttendance={handleDeleteAttendanceOnly}
+            onRemoveStudent={handleRemoveStudent}
+          />
 
           {/* Right Column (Calendar & Graph) */}
           <div className={`w-full md:w-2/3 border rounded-xl p-6 flex flex-col shadow-sm ${cardBg}`}>
 
-            <div className="flex items-center justify-between mb-6">
-              <button onClick={() => shiftMonth(-1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-              </button>
-              <span className={`font-bold text-sm uppercase tracking-widest ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{monthNames[calMonth]} {calYear}</span>
-              <button onClick={() => shiftMonth(1)} className={`p-1 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-              </button>
-            </div>
-
-            {isModalLoading ? (
-              <div className="flex-1 flex items-center justify-center text-sm text-gray-500 font-medium animate-pulse">Syncing ledger...</div>
-            ) : (
-              <div className="w-full min-w-[300px]">
-                <div className={`grid grid-cols-7 gap-2 mb-3 text-center text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-2">
-                  {renderCalendar()}
-                </div>
-              </div>
-            )}
-            <p className={`text-[10px] mt-4 mb-6 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Click any cell to manually toggle attendance status.</p>
+            <AttendanceCalendar 
+              attendanceData={attendanceData}
+              calYear={calYear}
+              calMonth={calMonth}
+              isModalLoading={isModalLoading}
+              isDarkMode={isDarkMode}
+              onMonthChange={shiftMonth}
+              onDayClick={handleDayClick}
+            />
 
             {/* SEPARATED COMPONENT: Attendance Graph */}
             <AttendanceGraph
@@ -476,67 +261,20 @@ export default function StudentDetailsModal({ student, onClose, onUpdate }) {
 
       </div>
 
-      {/* NEW: Edit Info Modal Overlay */}
       {isEditing && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm p-4">
-          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 border ${modalBg}`}>
-
-            <h3 className="text-base font-bold uppercase tracking-widest mb-6 border-b pb-4 border-gray-200/20">
-              Edit Student Info
-            </h3>
-
-            <div className="flex justify-center mb-6">
-              <div className="relative group">
-                <div className="w-24 h-24 rounded-full bg-orange-600 flex items-center justify-center text-white text-3xl font-bold shadow-md overflow-hidden ring-4 ring-transparent group-hover:ring-orange-500/20 transition-all">
-                  {profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    getInitials(editForm.name || currentStudent.name)
-                  )}
-                </div>
-                <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white">
-                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                </label>
-              </div>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
-              <input type="text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className={inputClass} placeholder="Full Name" />
-              <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className={inputClass} placeholder="Email Address" />
-
-              <div className="flex gap-2">
-                <select value={editForm.stream} onChange={e => setEditForm({ ...editForm, stream: e.target.value, section: STREAM_SECTIONS[e.target.value]?.[0] || 'Unassigned' })} className={inputClass}>
-                  {STREAMS.map(stream => <option key={stream} value={stream}>{stream}</option>)}
-                </select>
-                <select value={editForm.section} onChange={e => setEditForm({ ...editForm, section: e.target.value })} className={inputClass}>
-                  {STREAM_SECTIONS[editForm.stream]?.map(sec => <option key={sec} value={sec}>{sec}</option>)}
-                </select>
-              </div>
-
-              <div className="relative">
-                <input type={showPassword ? "text" : "password"} placeholder="New Password (Optional)" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={`${inputClass} pr-10`} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-2.5 flex items-center">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                </button>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200/20">
-                <button type="button" onClick={() => setIsEditing(false)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${isDarkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}>Cancel</button>
-                <button type="submit" className="bg-orange-600 text-white font-medium text-sm px-6 py-2 rounded-lg hover:bg-orange-500 shadow-md">Save Changes</button>
-              </div>
-            </form>
-
-          </div>
-        </div>
+        <EditStudentForm 
+          student={currentStudent}
+          initialProfileImage={profileImage}
+          isDarkMode={isDarkMode}
+          showToast={showToast}
+          onCancel={() => setIsEditing(false)}
+          onSave={(updatedStudent) => {
+            setCurrentStudent(updatedStudent);
+            setProfileImage(updatedStudent.profileImage);
+            setIsEditing(false);
+            onUpdate();
+          }}
+        />
       )}
     </div>
   );
