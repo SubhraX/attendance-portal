@@ -12,6 +12,7 @@ export default function StudentStatsTab({
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const panelClass = isDarkMode ? "bg-[#161b26] border-gray-800" : "bg-white border-gray-200";
 
+  // Calculate stats for the currently viewed month
   const presentCount = Object.keys(attendanceData).filter(key => {
     const d = new Date(key);
     return d.getMonth() === calMonth && d.getFullYear() === calYear && attendanceData[key] === 'present';
@@ -30,10 +31,12 @@ export default function StudentStatsTab({
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const days = [];
     
+    // Pad start of month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10 md:h-12 rounded-md bg-transparent"></div>);
     }
 
+    // Render actual days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const status = attendanceData[dateString];
@@ -52,6 +55,7 @@ export default function StudentStatsTab({
       );
     }
     
+    // Force exactly 42 cells (6 rows) so the layout never jumps when switching months
     const totalCells = firstDay + daysInMonth;
     const remainingCells = 42 - totalCells;
     for (let i = 0; i < remainingCells; i++) {
@@ -65,11 +69,11 @@ export default function StudentStatsTab({
     <div className="w-full flex flex-col h-full relative z-10 max-w-5xl mx-auto">
       <div className={`flex flex-col p-6 md:p-10 rounded-xl border w-full shadow-lg ${panelClass}`}>
 
-        {/* Profile Header */}
+        {/* Profile Header section (Cleaned) */}
         <div className={`border-b pb-6 md:pb-8 mb-6 md:mb-8 flex items-start gap-4 md:gap-6 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
           <div className="w-16 h-16 md:w-24 md:h-24 rounded-md bg-slate-400 overflow-hidden shrink-0 border border-transparent shadow-sm">
             <img
-              src={studentInfo.profileImage || `https://ui-avatars.com/api/?name=${studentInfo.name}&background=ea580c&color=fff&font-size=0.4`}
+              src={studentInfo?.profileImage || `https://ui-avatars.com/api/?name=${studentInfo?.name || 'Student'}&background=ea580c&color=fff&font-size=0.4`}
               alt="Avatar"
               className="w-full h-full object-cover"
             />
@@ -85,7 +89,7 @@ export default function StudentStatsTab({
         {/* Body Layout */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           
-          {/* Left Side: Stats & Account Details */}
+          {/* Left Side: Stats & Details */}
           <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
             <div>
               <p className={`text-[10px] md:text-xs font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>VERIFIED ATTENDANCE</p>
@@ -114,16 +118,20 @@ export default function StudentStatsTab({
                 <div>
                   <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Email</p>
                   <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                    {studentInfo?.email ? studentInfo.email : <span className="opacity-50 italic font-normal text-xs">Missing (Please Log Out & Log In)</span>}
+                    {studentInfo?.email ? studentInfo.email : <span className="opacity-50 italic font-normal text-xs">Syncing...</span>}
                   </p>
                 </div>
                 
                 <div>
                   <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
                   <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                    {studentInfo?.stream && studentInfo.stream !== 'Unassigned' 
-                      ? `${studentInfo.stream} ${studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}`
-                      : <span className="opacity-50 italic font-normal text-xs">Missing (Please Log Out & Log In)</span>}
+                    {!studentInfo?.stream ? (
+                      <span className="opacity-50 italic font-normal text-xs">Syncing...</span>
+                    ) : studentInfo.stream === 'Unassigned' ? (
+                      <span className="opacity-50 italic font-normal text-xs">No stream assigned</span>
+                    ) : (
+                      `${studentInfo.stream} ${studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}`
+                    )}
                   </p>
                 </div>
                 
@@ -134,7 +142,7 @@ export default function StudentStatsTab({
           {/* Right Side: Calendar & Graph */}
           <div className="flex-1 overflow-x-hidden flex flex-col gap-8">
             
-            {/* Calendar Section */}
+            {/* Cleanly padded Calendar Section */}
             <div className="w-full bg-transparent">
               <div className="flex items-center justify-between mb-6">
                 <button onClick={() => onMonthChange(-1)} className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-black hover:bg-gray-200'}`}>
@@ -162,7 +170,7 @@ export default function StudentStatsTab({
               )}
             </div>
 
-            {/* Attendance Graph */}
+            {/* Injected Attendance Graph */}
             {!isLoadingStats && (
               <div className="w-full mt-2">
                 <AttendanceGraph 

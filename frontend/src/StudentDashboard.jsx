@@ -22,11 +22,32 @@ export default function StudentDashboard() {
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
 
-  // 1. Load User Profile on Mount
+  // 1. Load User Profile on Mount & Sync Fresh Data
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setStudentInfo(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setStudentInfo(parsedUser); // Load stale data immediately for fast UI
+      
+      // Silently fetch fresh profile data in the background
+      const syncProfile = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${parsedUser._id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (res.ok) {
+            const freshData = await res.json();
+            setStudentInfo(freshData); // Update state instantly
+            localStorage.setItem('user', JSON.stringify(freshData)); // Save back to local storage
+          }
+        } catch (error) {
+          console.error("Failed to sync fresh profile:", error);
+        }
+      };
+      
+      syncProfile();
     }
   }, []);
 
