@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
-import StudentSidebar from './StudentSidebar';
-import StudentStatsTab from './StudentStatsTab';
-import StudentScanTab from './StudentScanTab';
+import StudentSidebar from './components/StudentSidebar';
+import StudentStatsTab from './components/StudentStatsTab';
+import StudentScanTab from './components/StudentScanTab';
 
 export default function StudentDashboard() {
   const { isDarkMode, toggleTheme } = useTheme();

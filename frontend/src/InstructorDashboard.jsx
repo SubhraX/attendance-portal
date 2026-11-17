@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FacultyRecords from './FacultyRecords';
-import InstructorSidebar from './InstructorSidebar';
-import InstructorSessionTab from './InstructorSessionTab';
+import InstructorSidebar from './components/InstructorSidebar';
+import InstructorSessionTab from './components/InstructorSessionTab';
 import { useTheme } from './ThemeContext';
 
 export default function InstructorDashboard() {

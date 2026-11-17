@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
 import { useTheme } from './ThemeContext';
-import AttendanceGraph from './AttendanceGraph';
-import AttendanceCalendar from './AttendanceCalendar';
-import StudentProfileSidebar from './StudentProfileSidebar';
-import EditStudentForm from './EditStudentForm';
+import AttendanceGraph from './components/AttendanceGraph';
+import AttendanceCalendar from './components/AttendanceCalendar';
+import StudentProfileSidebar from './components/StudentProfileSidebar';
+import EditStudentForm from './components/EditStudentForm';
 
 export default function StudentDetailsModal({ student, onClose, onUpdate }) {
   const { isDarkMode } = useTheme();

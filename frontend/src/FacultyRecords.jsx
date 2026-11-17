@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import RegisterStudentModal from './RegisterStudentModal';
 import StudentDetailsModal from './StudentDetailsModal';
-import FacultyFilterBar from './FacultyFilterBar';
-import StudentCard from './StudentCard';
+import FacultyFilterBar from './components/FacultyFilterBar';
+import StudentCard from './components/StudentCard';
 import { useTheme } from './ThemeContext';
 
 export const STREAM_SECTIONS = {
