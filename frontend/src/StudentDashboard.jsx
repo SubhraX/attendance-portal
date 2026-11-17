@@ -33,14 +33,25 @@ export default function StudentDashboard() {
       const syncProfile = async () => {
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${parsedUser._id}`, {
+          
+          // FIX: Use parsedUser.id (or fallback to _id just in case)
+          const studentId = parsedUser.id || parsedUser._id;
+          
+          const res = await fetch(`https://attendance-portal-p2lp.onrender.com/api/auth/student/${studentId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
           if (res.ok) {
             const freshData = await res.json();
-            setStudentInfo(freshData); // Update state instantly
-            localStorage.setItem('user', JSON.stringify(freshData)); // Save back to local storage
+            
+            // Re-map MongoDB's _id back to id to keep local storage consistent
+            const updatedUser = {
+              ...freshData,
+              id: freshData._id 
+            };
+            
+            setStudentInfo(updatedUser); 
+            localStorage.setItem('user', JSON.stringify(updatedUser)); 
           }
         } catch (error) {
           console.error("Failed to sync fresh profile:", error);
