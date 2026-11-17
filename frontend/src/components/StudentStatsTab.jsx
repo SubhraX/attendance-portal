@@ -69,7 +69,7 @@ export default function StudentStatsTab({
     <div className="w-full flex flex-col h-full relative z-10 max-w-5xl mx-auto">
       <div className={`flex flex-col p-6 md:p-10 rounded-xl border w-full shadow-lg ${panelClass}`}>
 
-        {/* Profile Header section */}
+        {/* Profile Header section (Cleaned) */}
         <div className={`border-b pb-6 md:pb-8 mb-6 md:mb-8 flex items-start gap-4 md:gap-6 ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
           <div className="w-16 h-16 md:w-24 md:h-24 rounded-md bg-slate-400 overflow-hidden shrink-0 border border-transparent shadow-sm">
             <img
@@ -83,28 +83,13 @@ export default function StudentStatsTab({
             <h3 className={`text-xl md:text-3xl font-extrabold uppercase truncate tracking-wide ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
               {studentInfo.name}
             </h3>
-            
-            {/* Stream and Section details moved up here */}
-            <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-3">
-              <p className={`text-xs md:text-sm font-medium truncate mr-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {studentInfo.email}
-              </p>
-              <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wide ${isDarkMode ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
-                {studentInfo.stream || 'Unassigned'}
-              </span>
-              {studentInfo.section && studentInfo.section !== 'Unassigned' && (
-                <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wide ${isDarkMode ? 'bg-gray-800 text-gray-300 border border-gray-700' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
-                  Sec {studentInfo.section}
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
         {/* Body Layout */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           
-          {/* Left Side: Stats */}
+          {/* Left Side: Stats & Details */}
           <div className="w-full lg:w-1/3 flex flex-col gap-6 md:gap-8 shrink-0">
             <div>
               <p className={`text-[10px] md:text-xs font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>VERIFIED ATTENDANCE</p>
@@ -114,13 +99,33 @@ export default function StudentStatsTab({
               <p className={`text-[10px] md:text-xs font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>MISSED SESSIONS</p>
               <p className={`font-bold text-4xl md:text-5xl ${isDarkMode ? 'text-red-500' : 'text-red-600'}`}>{absentCount}</p>
             </div>
-            <div className={`p-4 md:p-5 rounded-lg border mt-auto shadow-sm ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`p-4 md:p-5 rounded-lg border shadow-sm ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
               <p className={`text-[10px] font-mono mb-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>CALCULATED METRIC</p>
               <p className={`font-bold text-lg md:text-xl ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                 {totalSessions > 0
                   ? `${attendanceRate}% Compliance`
                   : 'No Data'}
               </p>
+            </div>
+
+            {/* Profile Details Moved Here */}
+            <div className={`p-4 md:p-5 rounded-lg border shadow-sm mt-auto flex flex-col gap-4 ${isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'}`}>
+              <p className={`text-[10px] font-mono uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>Account Details</p>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Email</p>
+                  <p className={`text-sm font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{studentInfo.email}</p>
+                </div>
+                {/* Only renders if the student actually has an assigned stream */}
+                {studentInfo.stream && studentInfo.stream !== 'Unassigned' && (
+                  <div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
+                    <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                      {studentInfo.stream} {studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
