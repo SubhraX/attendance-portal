@@ -67,16 +67,19 @@ export default function AttendanceCalendar({
       return updated;
     });
 
-    // 3. Send bulk 'clear' requests to the backend for the identified dates
+    // 3. Send requests sequentially so we don't crash the Render server
     try {
       const token = localStorage.getItem('token');
-      await Promise.all(keysToClear.map(dateString => 
-        fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/manual`, {
+      
+      // Using a for...of loop instead of Promise.all forces it to wait for 
+      // each request to finish before sending the next one.
+      for (const dateString of keysToClear) {
+        await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/manual`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ date: dateString, status: 'clear' })
-        })
-      ));
+        });
+      }
     } catch (error) {
       console.error("Error clearing month attendance:", error);
     }
