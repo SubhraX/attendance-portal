@@ -35,7 +35,6 @@ export default function AttendanceCalendar({
 
     try {
       const token = localStorage.getItem('token');
-      // Added await here
       await fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/manual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -49,6 +48,39 @@ export default function AttendanceCalendar({
         else delete reverted[dateString];
         return reverted;
       });
+    }
+  };
+
+  const handleClearMonth = async () => {
+    // 1. Identify which dates in the current visible month actually have attendance data
+    const keysToClear = Object.keys(attendanceData).filter(key => {
+      const d = new Date(key);
+      return d.getMonth() === calMonth && d.getFullYear() === calYear;
+    });
+
+    if (keysToClear.length === 0) return;
+
+    if (!window.confirm(`Erase all attendance records for ${monthNames[calMonth]} ${calYear}?`)) return;
+
+    // 2. Optimistically clear the UI instantly
+    setAttendanceData(prev => {
+      const updated = { ...prev };
+      keysToClear.forEach(key => delete updated[key]);
+      return updated;
+    });
+
+    // 3. Send bulk 'clear' requests to the backend for the identified dates
+    try {
+      const token = localStorage.getItem('token');
+      await Promise.all(keysToClear.map(dateString => 
+        fetch(`https://attendance-portal-p2lp.onrender.com/api/attendance/student/${studentId}/manual`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ date: dateString, status: 'clear' })
+        })
+      ));
+    } catch (error) {
+      console.error("Error clearing month attendance:", error);
     }
   };
 
@@ -74,7 +106,6 @@ export default function AttendanceCalendar({
         <div 
           key={day} 
           onClick={() => {
-            // Use onDayClick prop if it exists, otherwise fall back to internal handler
             if (typeof onDayClick === 'function') {
                 onDayClick(day);
             } else {
@@ -122,7 +153,24 @@ export default function AttendanceCalendar({
           </div>
         </div>
       )}
-      <p className={`text-[10px] mt-4 mb-6 text-center ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Click any cell to manually toggle attendance status.</p>
+      
+      {/* Updated Footer Section with Clear Button */}
+      <div className="flex items-center justify-between mt-4 mb-6 px-1">
+        <p className={`text-[10px] ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+          Click any cell to manually toggle attendance status.
+        </p>
+        <button 
+          onClick={handleClearMonth}
+          disabled={isModalLoading}
+          className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            isDarkMode 
+              ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' 
+              : 'border-red-200 text-red-600 hover:bg-red-50'
+          }`}
+        >
+          Clear Month
+        </button>
+      </div>
     </>
   );
 }
