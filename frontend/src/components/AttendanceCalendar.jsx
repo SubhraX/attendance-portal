@@ -60,9 +60,7 @@ export default function AttendanceCalendar({
 
     if (keysToClear.length === 0) return;
 
-    if (!window.confirm(`Erase all attendance records for ${monthNames[calMonth]} ${calYear}?`)) return;
-
-    // 2. Optimistically clear the UI instantly
+    // 2. Optimistically clear the UI instantly (Confirm pop-up removed)
     setAttendanceData(prev => {
       const updated = { ...prev };
       keysToClear.forEach(key => delete updated[key]);
