@@ -31,7 +31,7 @@ const Watermark = () => {
           onClick={() => setShowModal(true)}
           className="text-orange-500/80 hover:text-orange-400 hover:underline cursor-pointer transition-colors"
         >
-          G8
+          GROUP 8
         </button>
       </div>
 
@@ -57,7 +57,7 @@ const Watermark = () => {
                   Development Team
                 </p>
                 <h3 className="text-base font-extrabold uppercase tracking-wider">
-                  Xdevs
+                  GROUP 8
                 </h3>
               </div>
               <button
