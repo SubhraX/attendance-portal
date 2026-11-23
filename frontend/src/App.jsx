@@ -31,7 +31,7 @@ const Watermark = () => {
           onClick={() => setShowModal(true)}
           className="text-orange-500/80 hover:text-orange-400 hover:underline cursor-pointer transition-colors"
         >
-          GROUP 8
+          Gr8
         </button>
       </div>
 
