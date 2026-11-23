@@ -9,10 +9,10 @@ import StudentScanner from './StudentScanner';
 
 // Edit your team members here
 const TEAM_MEMBERS = [
-  { name: 'Member One', role: 'Lead Developer' },
-  { name: 'Member Two', role: 'Frontend Developer' },
-  { name: 'Member Three', role: 'Backend Developer' },
-  { name: 'Member Four', role: 'UI/UX Designer' },
+  { name: 'SAYANIK MANDAL', role: 'Lead Developer' },
+  { name: 'DEVASHISH MEENA', role: 'Frontend Developer' },
+  { name: 'AKSHAY ANAND', role: 'Backend Developer' },
+  { name: 'KANISH BHIDASRA', role: 'UI/UX Designer' },
 ];
 
 // Clickable Watermark + Team Modal (hidden on /login)
