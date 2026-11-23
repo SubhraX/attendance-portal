@@ -25,13 +25,13 @@ const Watermark = () => {
 
   return (
     <>
-      <div className="hidden md:block absolute bottom-6 right-5 z-40 select-none text-[10px] font-bold uppercase tracking-widest text-gray-500/70">
+      <div className="hidden md:block absolute bottom-6 right-5 z-40 select-none text-[10px] font-bold tracking-widest text-gray-500/70">
         Made by{' '}
         <button
           onClick={() => setShowModal(true)}
           className="text-orange-500/80 hover:text-orange-400 hover:underline cursor-pointer transition-colors"
         >
-          Gr8
+          GR8
         </button>
       </div>
 
