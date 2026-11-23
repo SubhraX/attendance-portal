@@ -25,7 +25,7 @@ const Watermark = () => {
 
   return (
     <>
-      <div className="fixed bottom-3 right-4 z-40 select-none text-[10px] font-bold uppercase tracking-widest text-gray-500/70">
+      <div className="hidden md:block absolute bottom-3 right-4 z-40 select-none text-[10px] font-bold uppercase tracking-widest text-gray-500/70">
         Made by{' '}
         <button
           onClick={() => setShowModal(true)}
@@ -42,17 +42,15 @@ const Watermark = () => {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-sm rounded-2xl border shadow-2xl overflow-hidden ${
-              isDarkMode
+            className={`w-full max-w-sm rounded-2xl border shadow-2xl overflow-hidden ${isDarkMode
                 ? 'bg-[#121826] border-gray-800 text-gray-100'
                 : 'bg-white border-gray-200 text-gray-900'
-            }`}
+              }`}
           >
             {/* Header */}
             <div
-              className={`flex items-center justify-between px-5 py-4 border-b ${
-                isDarkMode ? 'border-gray-800' : 'border-gray-200'
-              }`}
+              className={`flex items-center justify-between px-5 py-4 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'
+                }`}
             >
               <div>
                 <p className="text-[10px] font-mono uppercase tracking-widest text-orange-500 font-bold">
@@ -64,11 +62,10 @@ const Watermark = () => {
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className={`p-1.5 rounded-md transition-colors ${
-                  isDarkMode
+                className={`p-1.5 rounded-md transition-colors ${isDarkMode
                     ? 'text-gray-400 hover:text-white hover:bg-gray-800'
                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -81,19 +78,17 @@ const Watermark = () => {
               {TEAM_MEMBERS.map((member, idx) => (
                 <div
                   key={idx}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg border ${
-                    isDarkMode
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg border ${isDarkMode
                       ? 'bg-[#1e293b]/60 border-gray-800'
                       : 'bg-gray-50 border-gray-200'
-                  }`}
+                    }`}
                 >
                   <span className="text-sm font-bold">{member.name}</span>
                   <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                      isDarkMode
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${isDarkMode
                         ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
                         : 'bg-orange-50 text-orange-700 border border-orange-200'
-                    }`}
+                      }`}
                   >
                     {member.role}
                   </span>
@@ -141,13 +136,15 @@ export default function App() {
     <ThemeProvider>
       <ToastProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<PublicLogin />} />
-            <Route path="/" element={<ProtectedPortal />} />
-            <Route path="/scanner" element={<ProtectedScanner />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <Watermark />
+          <div className="relative min-h-screen">
+            <Routes>
+              <Route path="/login" element={<PublicLogin />} />
+              <Route path="/" element={<ProtectedPortal />} />
+              <Route path="/scanner" element={<ProtectedScanner />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <Watermark />
+          </div>
         </BrowserRouter>
       </ToastProvider>
     </ThemeProvider>
