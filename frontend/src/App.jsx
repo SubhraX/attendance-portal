@@ -1,10 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './ThemeContext';
 import { ToastProvider } from './ToastContext';
 import Login from './Login';
 import InstructorDashboard from './InstructorDashboard';
 import StudentDashboard from './StudentDashboard';
 import StudentScanner from './StudentScanner';
+
+// Watermark component that hides on the login page
+const Watermark = () => {
+  const location = useLocation();
+  if (location.pathname === '/login') return null;
+
+  return (
+    <div className="fixed bottom-3 right-4 z-40 pointer-events-none select-none text-[10px] font-bold uppercase tracking-widest text-gray-500/70">
+      Made by <span className="text-orange-500/80">Xdevs</span>
+    </div>
+  );
+};
 
 // 1. Dynamic Portal Route: Sorts Faculty and Students dynamically
 const ProtectedPortal = () => {
@@ -51,6 +63,7 @@ export default function App() {
             {/* Catch-all fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Watermark />
         </BrowserRouter>
       </ToastProvider>
     </ThemeProvider>
