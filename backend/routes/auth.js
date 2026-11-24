@@ -42,11 +42,9 @@ router.post('/student/:id/image', protect, instructorOnly, upload.single('profil
     const student = await User.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'Student not found' });
 
-    // Convert the file buffer to a Base64 Data URL
     const b64 = Buffer.from(req.file.buffer).toString('base64');
     const dataURI = `data:${req.file.mimetype};base64,${b64}`;
 
-    // Store the giant string directly in the database
     student.profileImage = dataURI;
     await student.save();
 
@@ -62,12 +60,20 @@ router.post('/student/:id/image', protect, instructorOnly, upload.single('profil
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, stream, section } = req.body;
+    const { name, email, password, role, stream, section, admissionYear } = req.body;
     
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role, stream, section });
+    const user = await User.create({ 
+      name, 
+      email, 
+      password, 
+      role, 
+      stream, 
+      section, 
+      admissionYear: admissionYear ? Number(admissionYear) : null 
+    });
     res.status(201).json({ message: 'User registered successfully', userId: user._id });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -105,8 +111,12 @@ router.post('/login', async (req, res) => {
       user: { 
         id: user._id, 
         name: user.name, 
+        email: user.email,
         role: user.role,
-        profileImage: user.profileImage // Included for immediate frontend display
+        stream: user.stream,
+        section: user.section,
+        admissionYear: user.admissionYear,
+        profileImage: user.profileImage
       } 
     });
   } catch (error) {
@@ -165,7 +175,7 @@ router.delete('/student/:id', protect, instructorOnly, async (req, res) => {
 // Edit a Student (Faculty Only)
 router.put('/student/:id', protect, instructorOnly, async (req, res) => {
   try {
-    const { name, email, password, stream, section, profileImage } = req.body;
+    const { name, email, password, stream, section, admissionYear, profileImage } = req.body;
     const student = await User.findById(req.params.id);
     
     if (!student) return res.status(404).json({ message: 'Student not found' });
@@ -174,8 +184,10 @@ router.put('/student/:id', protect, instructorOnly, async (req, res) => {
     if (email) student.email = email;
     if (stream) student.stream = stream;
     if (section) student.section = section;
+    if (admissionYear !== undefined) {
+      student.admissionYear = admissionYear ? Number(admissionYear) : null;
+    }
     
-    // Support URL-based image updates without multipart form data
     if (profileImage !== undefined) student.profileImage = profileImage;
     
     if (password && password.trim().length > 0) {

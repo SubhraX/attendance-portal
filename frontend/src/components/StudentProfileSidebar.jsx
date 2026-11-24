@@ -34,10 +34,8 @@ export default function StudentProfileSidebar({
             {student.name}
           </h4>
 
-          {/* Fixed-height wrapper prevents the name from shifting */}
           <div className="h-5 mt-1.5 flex items-center">
             <div className="flex items-center gap-4">
-              {/* Gain (Previous Month Present %) */}
               <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0 ? (isDarkMode ? 'text-[#34d399]' : 'text-emerald-600') : (isDarkMode ? 'text-gray-600' : 'text-gray-400')}`}>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
@@ -45,7 +43,6 @@ export default function StudentProfileSidebar({
                 {prevTotal > 0 ? Math.round((prevMonthPresent / prevTotal) * 100) : 0}%
               </span>
 
-              {/* Lose (Previous Month Absent %) */}
               <span className={`flex items-center gap-0.5 font-bold text-xs tracking-wider ${prevTotal > 0 ? (isDarkMode ? 'text-[#f87171]' : 'text-red-600') : (isDarkMode ? 'text-gray-600' : 'text-gray-400')}`}>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M12 5v14m0 0l-5-5m5 5l5-5"></path>
@@ -68,11 +65,17 @@ export default function StudentProfileSidebar({
         <div className="flex flex-col gap-4">
           <div>
             <span className={labelClass}>Email</span>
-            <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.email}</span>
+            <span className={`text-sm font-semibold break-all ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.email}</span>
           </div>
-          <div>
-            <span className={labelClass}>Stream & Section</span>
-            <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.stream} - {student.section}</span>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className={labelClass}>Stream & Section</span>
+              <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.stream} - {student.section}</span>
+            </div>
+            <div>
+              <span className={labelClass}>Admission Year</span>
+              <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{student.admissionYear || '—'}</span>
+            </div>
           </div>
         </div>
       </div>

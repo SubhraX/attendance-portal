@@ -28,7 +28,7 @@ export default function FacultyRecords() {
   
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState({ stream: 'All Streams', section: 'All' });
+  const [selectedFilter, setSelectedFilter] = useState({ stream: 'All Streams', year: 'All', section: 'All' });
   
   // Modal State
   const [showRegModal, setShowRegModal] = useState(false);
@@ -58,22 +58,24 @@ export default function FacultyRecords() {
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           s.email.toLowerCase().includes(searchQuery.toLowerCase());
     
-    let matchesStream = false;
+    let matchesFilter = false;
     if (selectedFilter.stream === 'All Streams') {
-      matchesStream = true;
+      matchesFilter = true;
     } else {
       const isSameStream = s.stream === selectedFilter.stream;
+      const isSameYear = selectedFilter.year === 'All' || Number(s.admissionYear) === Number(selectedFilter.year);
       const isSameSection = selectedFilter.section === 'All' || s.section === selectedFilter.section;
-      matchesStream = isSameStream && isSameSection;
+      matchesFilter = isSameStream && isSameYear && isSameSection;
     }
     
-    return matchesSearch && matchesStream;
+    return matchesSearch && matchesFilter;
   });
 
   return (
     <div className="w-full flex flex-col h-full relative z-10">
       
       <FacultyFilterBar 
+        students={students}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedFilter={selectedFilter}

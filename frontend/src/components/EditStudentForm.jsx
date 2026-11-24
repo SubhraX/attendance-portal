@@ -14,7 +14,8 @@ export default function EditStudentForm({
     email: student.email, 
     password: '',
     stream: student.stream || STREAMS[0],
-    section: student.section || STREAM_SECTIONS[STREAMS[0]][0]
+    section: student.section || STREAM_SECTIONS[STREAMS[0]][0],
+    admissionYear: student.admissionYear ? String(student.admissionYear) : ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [profileImage, setProfileImage] = useState(initialProfileImage);
@@ -62,7 +63,6 @@ export default function EditStudentForm({
           const data = await res.json();
           if (res.ok) {
             showToast("Profile image uploaded successfully.");
-            // Pass the new image URL up to the parent immediately
             onSave({ ...student, profileImage: data.profileImage }); 
           } else {
             showToast(data.message || "Upload failed.");
@@ -81,7 +81,11 @@ export default function EditStudentForm({
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const payload = { ...editForm };
+      const parsedYear = editForm.admissionYear ? Number(editForm.admissionYear) : null;
+      const payload = { 
+        ...editForm,
+        admissionYear: parsedYear
+      };
       
       if (editForm.password && editForm.password.trim() !== '') payload.password = editForm.password;
       else if (student.password) payload.password = student.password;
@@ -94,7 +98,14 @@ export default function EditStudentForm({
       
       if (res.ok) {
         showToast("Record updated successfully.");
-        onSave({ ...student, name: editForm.name, email: editForm.email, stream: editForm.stream, section: editForm.section });
+        onSave({ 
+          ...student, 
+          name: editForm.name, 
+          email: editForm.email, 
+          stream: editForm.stream, 
+          section: editForm.section,
+          admissionYear: parsedYear
+        });
       } else {
         const data = await res.json();
         showToast(data.message || "Update failed. Check required fields.");
@@ -148,6 +159,16 @@ export default function EditStudentForm({
               {STREAM_SECTIONS[editForm.stream]?.map(sec => <option key={sec} value={sec}>{sec}</option>)}
             </select>
           </div>
+
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
+            placeholder="Admission Year (e.g. 2026)"
+            value={editForm.admissionYear}
+            onChange={e => setEditForm({ ...editForm, admissionYear: e.target.value.replace(/\D/g, '') })}
+            className={inputClass}
+          />
           
           <div className="relative">
             <input type={showPassword ? "text" : "password"} placeholder="New Password (Optional)" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} className={`${inputClass} pr-10`} />

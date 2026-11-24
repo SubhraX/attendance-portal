@@ -6,10 +6,11 @@ const userSchema = mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['student', 'instructor'], default: 'student' },
-  deviceId: { type: String, default: null }, 
+  deviceId: { type: String, default: null },
   stream: { type: String, default: 'Unassigned' },
   section: { type: String, default: 'Unassigned' },
-  profileImage: { type: String, default: null } // <-- ADD THIS LINE
+  admissionYear: { type: Number, default: null },
+  profileImage: { type: String, default: null }
 }, { timestamps: true });
 
 // Hash password before saving
