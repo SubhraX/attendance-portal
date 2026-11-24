@@ -12,17 +12,24 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
     email: '', 
     password: '', 
     stream: STREAMS[0], 
-    section: STREAM_SECTIONS[STREAMS[0]][0] 
+    section: STREAM_SECTIONS[STREAMS[0]][0],
+    admissionYear: ''
   });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegisterStudent = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...regForm,
+        admissionYear: regForm.admissionYear ? Number(regForm.admissionYear) : null,
+        role: 'student'
+      };
+
       const res = await fetch('https://attendance-portal-p2lp.onrender.com/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...regForm, role: 'student' })
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         showToast("Student registered successfully!");
@@ -130,6 +137,19 @@ export default function RegisterStudentModal({ onClose, onSuccess }) {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Admission Year</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="e.g. 2026"
+              value={regForm.admissionYear}
+              onChange={e => setRegForm({ ...regForm, admissionYear: e.target.value.replace(/\D/g, '') })}
+              className={inputClass}
+            />
           </div>
 
           <div>
