@@ -43,7 +43,7 @@ export default function StudentCard({ student, index, isDarkMode, onClick }) {
         {student.email}
       </p>
       
-      {/* Stream & Section Badges */}
+      {/* Stream, Year & Section Badges */}
       <div className="flex flex-wrap items-center gap-1.5 mt-3">
         <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${
           isDarkMode 
@@ -52,6 +52,16 @@ export default function StudentCard({ student, index, isDarkMode, onClick }) {
         }`}>
           {student.stream || 'Unassigned'}
         </span>
+
+        {student.admissionYear && (
+          <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${
+            isDarkMode 
+              ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' 
+              : 'bg-sky-50 text-sky-700 border border-sky-200'
+          }`}>
+            {student.admissionYear}
+          </span>
+        )}
         
         {student.section && student.section !== 'Unassigned' && (
           <span className={`inline-flex px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wide ${
