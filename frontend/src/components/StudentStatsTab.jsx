@@ -122,17 +122,32 @@ export default function StudentStatsTab({
                   </p>
                 </div>
                 
-                <div>
-                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
-                  <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                    {!studentInfo?.stream ? (
-                      <span className="opacity-50 italic font-normal text-xs">Syncing...</span>
-                    ) : studentInfo.stream === 'Unassigned' ? (
-                      <span className="opacity-50 italic font-normal text-xs">No stream assigned</span>
-                    ) : (
-                      `${studentInfo.stream} ${studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}`
-                    )}
-                  </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Stream & Section</p>
+                    <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                      {!studentInfo?.stream ? (
+                        <span className="opacity-50 italic font-normal text-xs">Syncing...</span>
+                      ) : studentInfo.stream === 'Unassigned' ? (
+                        <span className="opacity-50 italic font-normal text-xs">No stream assigned</span>
+                      ) : (
+                        `${studentInfo.stream} ${studentInfo.section && studentInfo.section !== 'Unassigned' ? `- Sec ${studentInfo.section}` : ''}`
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Admission Year</p>
+                    <p className={`text-sm font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                      {studentInfo?.admissionYear ? (
+                        studentInfo.admissionYear
+                      ) : studentInfo?.email ? (
+                        <span className="opacity-50 italic font-normal text-xs">—</span>
+                      ) : (
+                        <span className="opacity-50 italic font-normal text-xs">Syncing...</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
                 
               </div>
